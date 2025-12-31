@@ -7,6 +7,8 @@
 ![React](https://img.shields.io/badge/React-18.0-61dafb)
 ![Python](https://img.shields.io/badge/Python-3.10-yellow)
 
+![DASHBOARD](docs/SCREENSHOTS/DASHBOARD.png)
+
 > **Real-time Anomaly Detection Platform using Topological Data Analysis (TDA)**
 
 ---

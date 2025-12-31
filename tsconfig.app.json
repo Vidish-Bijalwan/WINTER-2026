@@ -11,8 +11,9 @@
     "skipLibCheck": true,
     /* Bundler mode */
     "moduleResolution": "node",
-    "typeRoots": [
-      "./node_modules/@types"
+    "types": [
+      "vitest/globals",
+      "@testing-library/jest-dom"
     ],
     "allowImportingTsExtensions": true,
     "isolatedModules": true,
