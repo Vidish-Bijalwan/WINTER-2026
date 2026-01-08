@@ -1,31 +1,55 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
 from fastapi.middleware.cors import CORSMiddleware
-import asyncio
-import json
+from fastapi.responses import JSONResponse
 import logging
-from typing import List
+from contextlib import asynccontextmanager
+
+# Import internal modules
+from .database.connection import db_connection
+from .middleware.auth_middleware import AuthMiddleware
+from .api.routes import auth, anomalies, users
 
 # Initialize logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("topoforge")
 
-from prometheus_fastapi_instrumentator import Instrumentator
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    await db_connection.connect()
+    from .database.indexes import create_indexes
+    await create_indexes()
+    logger.info("Database connected and indexes checked")
+    yield
+    # Shutdown
+    await db_connection.disconnect()
+    logger.info("Database disconnected")
 
-app = FastAPI(title="TopoForge Intelligence Engine")
-
-# Setup Prometheus Instrumentation
-Instrumentator().instrument(app).expose(app)
+app = FastAPI(title="TopoForge Intelligence Engine", lifespan=lifespan)
 
 # CORS Configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify the frontend URL
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# WebSocket Connection Manager
+# Auth Middleware
+app.add_middleware(AuthMiddleware)
+
+from .api.routes import auth, anomalies, users, realtime
+# Include Routers
+app.include_router(auth.router)
+app.include_router(anomalies.router)
+app.include_router(users.router)
+app.include_router(realtime.router)
+
+# WebSocket Connection Manager (Preserved/Refined)
+from typing import List
+import json
+
 class ConnectionManager:
     def __init__(self):
         self.active_connections: List[WebSocket] = []
@@ -44,7 +68,7 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 # Initialize Processor
-from core.processor import DataProcessor
+from .core.processor import DataProcessor
 processor = DataProcessor(window_size=50)
 
 @app.get("/")
@@ -61,16 +85,21 @@ async def websocket_endpoint(websocket: WebSocket):
                 event = json.loads(data_text)
                 processor.ingest(event)
                 
-                # Run analysis every 5 events or so to avoid overload
-                # In production, run this async in background
-                result = processor.process_window()
+                # Run analysis
+                result = await processor.process_window()
                 
                 response = {
                     "type": "analysis",
                     "data": result,
                     "original_event": event
                 }
+                
+                # Broadcast via WebSocket
                 await websocket.send_text(json.dumps(response))
+                
+                # Broadcast via SSE if anomaly
+                if result.get("is_anomaly"):
+                    await realtime.broadcast_event(result)
                 
             except json.JSONDecodeError:
                 pass
@@ -81,5 +110,13 @@ async def websocket_endpoint(websocket: WebSocket):
 @app.post("/api/ingest")
 async def ingest_data(data: dict):
     processor.ingest(data)
-    result = processor.process_window()
+    result = await processor.process_window()
     return result
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Global error: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={"message": "Internal Server Error", "detail": str(exc)},
+    )

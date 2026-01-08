@@ -6,6 +6,8 @@ import logging
 from .tda import TopologyAnalyzer
 from .ml import AnomalyDetector
 from .security import ThreatClassifier
+from ..database.models import AnomalyLogModel
+from datetime import datetime
 
 logger = logging.getLogger("topoforge.processor")
 
@@ -17,22 +19,15 @@ class DataProcessor:
         self.ml = AnomalyDetector()
         self.security = ThreatClassifier()
         self.is_calibrated = False
+        self.anomaly_model = AnomalyLogModel()
 
     def ingest(self, event: Dict[str, Any]):
         """
         Ingest a single event into the buffer.
         """
-        # Feature Extraction (Simple heuristic for now)
-        # We expect event to have 'timestamp', 'value', 'metadata'
         try:
-            # Create a numerical vector [value, time_delta_from_prev]
-            # This is a placeholder. In real life, use robust embedding.
             val = float(event.get('value', 0))
-            
-            # Simple vector: [value, random_noise_for_demo_geometry]
-            # We add noise to make TDA interesting if data is 1D
             vector = [val, np.random.normal(0, 0.1)] 
-            
             self.event_buffer.append(vector)
             
             if len(self.event_buffer) >= self.window_size and not self.is_calibrated:
@@ -48,7 +43,7 @@ class DataProcessor:
         self.is_calibrated = True
         logger.info("System calibrated on initial data window.")
 
-    def process_window(self) -> Dict[str, Any]:
+    async def process_window(self) -> Dict[str, Any]:
         """
         Run TDA and ML on the current window.
         """
@@ -62,7 +57,7 @@ class DataProcessor:
         betti = self.tda.extract_betti_numbers(diagrams)
         
         # 2. ML Anomaly Detection
-        ml_result = self.ml.predict(data[-1].reshape(1, -1)) # Predict on latest point
+        ml_result = self.ml.predict(data[-1].reshape(1, -1))
         
         # 3. Security Classification
         security_context = self.security.classify({
@@ -70,10 +65,31 @@ class DataProcessor:
             "betti_numbers": betti
         })
         
-        return {
+        result = {
             "betti_numbers": betti,
-            "anomaly_score": ml_result['severity'],
-            "is_anomaly": ml_result['is_anomaly'],
+            "anomaly_score": float(ml_result['severity']),
+            "is_anomaly": bool(ml_result['is_anomaly']),
             "security_analysis": security_context,
-            "window_size": len(data)
+            "window_size": len(data),
+            "timestamp": datetime.utcnow()
         }
+        
+        # Log to Database if anomaly or periodically
+        # Logic: always log anomalies, maybe sample normals
+        if result["is_anomaly"]:
+            try:
+                await self.anomaly_model.create_log({
+                    "timestamp": result["timestamp"],
+                    "source_type": "stream_processor",
+                    "event_data": {"recent_values": data[-5:].tolist()}, # Store last few points
+                    "betti_h0": betti.get("h0", 0),
+                    "betti_h1": betti.get("h1", 0),
+                    "betti_h2": betti.get("h2", 0),
+                    "anomaly_score": result["anomaly_score"],
+                    "is_anomaly": True,
+                    "metadata": security_context
+                })
+            except Exception as e:
+                logger.error(f"Failed to save anomaly log: {e}")
+        
+        return result
