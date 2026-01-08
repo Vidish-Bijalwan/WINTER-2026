@@ -2,35 +2,51 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
-  build:
+  frontend:
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
         node-version: [18.x, 20.x]
-
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      # Use npm install instead of npm ci to handle potential lockfile mismatches or Bun usage
+      - name: Install dependencies
+        run: npm install
+      - name: Lint
+        # Continue even if lint warns, but fail on errors
+        run: npm run lint
+      - name: Build
+        run: npm run build
+      # Frontend tests
+      - name: Test
+        run: npm test
 
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-
-    - name: Install dependencies
-      run: npm ci
-
-    - name: Lint
-      run: npm run lint
-
-    - name: Build
-      run: npm run build
-
-    - name: Test
-      run: npm test
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      # Simple check to ensure backend can at least import main
+      - name: Verify Backend Import
+        run: |
+          python -c "import main; print('Successfully imported main')"
