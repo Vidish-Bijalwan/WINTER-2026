@@ -10,3 +10,9 @@ python-multipart
 websockets
 prometheus-fastapi-instrumentator
 pandas
+pymongo==4.6.1
+python-dotenv==1.0.0
+motor==3.3.2
+PyJWT==2.8.0
+bcrypt==4.1.2
+python-jose[cryptography]==3.3.0
