@@ -1,0 +1,33 @@
+.persistence-page {
+  width: 100%;
+}
+
+.persistence-page h1 {
+  margin-bottom: 2rem;
+}
+
+.persistence-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.persistence-diagram-section,
+.persistence-barcode-section {
+  width: 100%;
+}
+
+.persistence-diagram-section h2,
+.persistence-barcode-section h2 {
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+@media (min-width: 1024px) {
+  .persistence-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+}

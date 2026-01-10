@@ -1,0 +1,97 @@
+.persistence-barcode {
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+}
+
+.barcode-controls {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.barcode-controls .control-group {
+  flex: 1;
+  min-width: 200px;
+}
+
+.barcode-controls label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: var(--color-text-secondary);
+}
+
+.barcode-container {
+  margin-bottom: 1rem;
+}
+
+.barcode-empty {
+  text-align: center;
+  padding: 3rem;
+  color: var(--color-text-secondary);
+}
+
+.barcode-dimension-group {
+  margin-bottom: 2rem;
+}
+
+.barcode-dimension-group:last-child {
+  margin-bottom: 0;
+}
+
+.barcode-dimension-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.barcode-dimension-header h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.barcode-count {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.barcode-bars {
+  position: relative;
+  height: 40px;
+  background-color: var(--color-bg-tertiary);
+  border-radius: 0.25rem;
+  overflow: visible;
+}
+
+.barcode-bar {
+  position: absolute;
+  height: 30px;
+  top: 5px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.barcode-bar:hover,
+.barcode-bar.hovered {
+  opacity: 1 !important;
+  transform: scaleY(1.2);
+  z-index: 10;
+  box-shadow: 0 0 8px rgba(0, 212, 255, 0.5);
+}
+
+.barcode-scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  margin-top: 0.5rem;
+}

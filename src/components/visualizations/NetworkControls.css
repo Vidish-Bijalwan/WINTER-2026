@@ -1,0 +1,63 @@
+.network-controls {
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.controls-section {
+  margin-bottom: 1.5rem;
+}
+
+.controls-section:last-child {
+  margin-bottom: 0;
+}
+
+.controls-section h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--color-text-primary);
+}
+
+.control-group {
+  margin-bottom: 1rem;
+}
+
+.control-group label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: var(--color-text-secondary);
+}
+
+.control-group input[type="text"],
+.control-group input[type="number"] {
+  width: 100%;
+}
+
+.control-group input[type="checkbox"] {
+  margin-right: 0.5rem;
+}
+
+.control-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.control-buttons .btn {
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .network-controls {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 280px;
+    z-index: 10;
+  }
+}
