@@ -33,3 +33,6 @@ __pycache__
 
 # Vite
 *.timestamp-*.mjs
+
+# Secrets
+backend/.env
