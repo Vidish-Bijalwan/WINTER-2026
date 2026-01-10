@@ -2,15 +2,65 @@ version: '3.8'
 
 services:
   frontend:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile
     ports:
-      - "3000:80"
-    restart: always
+      - "5173:80"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    networks:
+      - topoforge-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   backend:
-    build: ./backend
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
     ports:
       - "8000:8000"
     environment:
-      - PORT=8000
-    restart: always
+      - MONGODB_URI=mongodb://mongodb:27017/topoforge
+      - DATABASE_NAME=topoforge
+      - JWT_SECRET=dev_secret_key_change_in_prod
+      - ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - topoforge-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  mongodb:
+    image: mongo:7.0
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - topoforge-network
+    restart: unless-stopped
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  topoforge-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
