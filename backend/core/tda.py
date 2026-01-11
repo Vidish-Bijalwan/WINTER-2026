@@ -32,25 +32,43 @@ class TopologyAnalyzer:
             logger.error(f"TDA Computation failed: {str(e)}")
             return []
 
-    def extract_betti_numbers(self, diagrams, threshold: float = 0.1) -> dict:
+    def extract_betti_numbers(self, diagrams, threshold: float = 0.1, adaptive: bool = False, sigma: float = 2.0) -> dict:
         """
         Extract Betti numbers (counts of features) from diagrams.
         :param diagrams: Output from compute_persistence
-        :param threshold: Minimum lifetime to be considered a significant feature
+        :param threshold: Minimum lifetime to be considered a significant feature (used if adaptive=False)
+        :param adaptive: If True, dynamically calculate threshold based on distribution
+        :param sigma: Standard deviations above mean for adaptive threshold
         :return: Dictionary of Betti numbers {h0: int, h1: int, ...}
         """
         betti = {}
         for dim, dgm in enumerate(diagrams):
             # Filter out short-lived features (noise)
             # Lifetime = death - birth
-            # Note: H0 features often have infinite death, handle carefully
             lifetimes = dgm[:, 1] - dgm[:, 0]
             
-            # For H0, one component usually lives forever (inf). We count components > threshold.
-            # Usually H0 is just number of connected components at epsilon=0, but persistent H0 
-            # tracks merging.
+            # Handle infinite death (H0 usually has one inf feature)
+            # We treat inf as maximum finite lifetime or just count it separately
+            finite_lifetimes = lifetimes[np.isfinite(lifetimes)]
             
-            significant = np.sum(lifetimes > threshold)
-            betti[f"h{dim}"] = int(significant)
+            current_threshold = threshold
+            
+            if adaptive and len(finite_lifetimes) > 0:
+                mean_life = np.mean(finite_lifetimes)
+                std_life = np.std(finite_lifetimes)
+                current_threshold = mean_life + (sigma * std_life)
+                logger.debug(f"H{dim} Adaptive Threshold: {current_threshold:.4f} (Mean: {mean_life:.4f}, Std: {std_life:.4f})")
+            
+            # Count significant features
+            # For H0, we always include the infinite component + any finite components > threshold
+            if dim == 0:
+                # Count infinite features (usually 1)
+                inf_count = np.sum(np.isinf(lifetimes))
+                # Count finite features > threshold
+                sig_finite = np.sum(finite_lifetimes > current_threshold)
+                betti[f"h{dim}"] = int(inf_count + sig_finite)
+            else:
+                significant = np.sum(lifetimes > current_threshold)
+                betti[f"h{dim}"] = int(significant)
             
         return betti
