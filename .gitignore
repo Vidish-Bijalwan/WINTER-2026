@@ -23,8 +23,16 @@ dist-ssr
 *.sln
 *.sw?
 
-# Environment variables
-.env
-.env.local
-.env.production.local
-.env.development.local
+# Python
+venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Vite
+*.timestamp-*.mjs
+
+# Secrets
+backend/.env

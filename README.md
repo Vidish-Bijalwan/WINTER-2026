@@ -1,81 +1,151 @@
-# TopoForge Frontend
+# TopoShape Insights (TopoForge)
 
-Advanced Topological Data Analysis Visualization Platform
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
+![License](https://img.shields.io/badge/license-MIT-blue)
+![Version](https://img.shields.io/badge/version-1.0.0-orange)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
+![React](https://img.shields.io/badge/React-18.0-61dafb)
+![Python](https://img.shields.io/badge/Python-3.10-yellow)
 
-## Features
+![DASHBOARD](docs/SCREENSHOTS/DASHBOARD.png)
 
-### Phase 1: Enhanced Data Visualizations
-- **3D Network Visualization**: Interactive 3D network graph with zoom, click, search, color customization, edge thickness, transitions, and mini-map
-- **Persistence Diagrams**: Interactive scatter plots and barcode visualizations with filtering and synchronization
+> **Real-time Anomaly Detection Platform using Topological Data Analysis (TDA)**
 
-### Phase 2: User Dashboard & Settings
-- **Real-time Dashboard**: Live anomaly feed, statistics panels, and data source monitoring
-- **User Profile & Settings**: Comprehensive profile management and settings pages with theme support
+---
 
-### Phase 3: Mobile Responsiveness & PWA
-- **Mobile-Responsive Design**: Fully responsive layout with mobile navigation
-- **Progressive Web App**: PWA support with service worker, manifest, and offline capabilities
+## 📋 Table of Contents
 
-### Phase 4: Advanced Features
-- **Advanced Filtering & Search**: Global search with debouncing and advanced filter options
-- **Data Export & Reporting**: Export functionality for multiple formats (JSON, CSV, PNG) and report builder
+- [Overview](#-overview)
+- [Key Features](#-key-features)
+- [Tech Stack](#-tech-stack)
+- [Quick Start](#-quick-start)
+- [System Architecture](#-system-architecture)
+- [Documentation](#-documentation)
+- [Contributing](#-contributing)
+- [License](#-license)
 
-## Getting Started
+---
+
+## 🔭 Overview
+
+**TopoShape Insights** (internally **TopoForge**) is a cutting-edge intelligence platform that leverages **Topological Data Analysis (TDA)** to detect anomalies in high-dimensional streaming data. Unlike traditional statistical methods that rely on thresholds, TopoShape analyzes the **"shape"** and **structure** of data to identify subtle, complex patterns—such as coordinated bot attacks, disinformation campaigns, or system failures.
+
+### Why TDA?
+Traditional tools miss "quiet" attacks that have low volume but high structural coordination. By analyzing topological features (Betti numbers, persistence diagrams), TopoShape distinguishes between organic traffic and artificial coordination.
+
+---
+
+## ✨ Key Features
+
+- ✅ **Real-time Anomaly Detection**: Sub-second detection of coordinated attacks.
+- ✅ **Topological Analysis**: Computes Betti numbers (H0, H1, H2) on live data streams.
+- ✅ **3D Visualization**: Interactive force-directed graphs and persistence barcodes.
+- ✅ **Multi-Source Ingestion**: Supports Wikipedia SSE, with planned support for Twitter/X and GitHub.
+- ✅ **Performance Optimized**: Client-side heuristic algorithms running at <50ms per window.
+- ✅ **Docker Ready**: Containerized for easy deployment.
+
+---
+
+## 🛠 Tech Stack
+
+### Frontend
+- **Framework**: React 18, Vite
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS, Shadcn/UI
+- **Visualization**: Three.js (@react-three/fiber), Recharts, D3.js
+
+### Backend
+- **API**: Python (FastAPI)
+- **Data Processing**: NumPy, Scikit-learn
+- **Streaming**: Server-Sent Events (SSE)
+
+---
+
+## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+ and npm/yarn
+- Node.js v20+
+- Python 3.10+
+- Docker (optional)
 
 ### Installation
 
-```bash
-# Install dependencies
-npm install
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Vidish-Bijalwan/WINTER-2026.git
+   cd WINTER-2026
+   ```
 
-# Start development server
-npm run dev
+2. **Install Frontend Dependencies**
+   ```bash
+   npm install
+   ```
 
-# Build for production
-npm run build
+3. **Install Backend Dependencies**
+   ```bash
+   cd backend
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
 
-# Preview production build
-npm run preview
+4. **Start the Application**
+   ```bash
+   # Terminal 1: Frontend
+   npm run dev
+
+   # Terminal 2: Backend
+   cd backend
+   python main.py
+   ```
+
+Visit `http://localhost:5173` to view the dashboard.
+
+---
+
+## 🏗 System Architecture
+
+```mermaid
+graph TD
+    subgraph "Data Sources"
+        WP[Wikipedia SSE]
+        TW[Twitter/X API]
+    end
+
+    subgraph "Processing Layer"
+        Norm[Normalization]
+        Buffer[Event Buffer]
+        TDA[TDA Engine]
+    end
+
+    subgraph "Visualization"
+        Dash[React Dashboard]
+        Net3D[3D Network]
+        Persist[Persistence Barcodes]
+    end
+
+    WP --> Norm
+    Norm --> Buffer
+    Buffer --> TDA
+    TDA --> Net3D
+    TDA --> Persist
+    TDA --> Dash
 ```
 
-## Project Structure
+## 📚 Documentation
 
-```
-src/
-├── components/
-│   ├── charts/          # Exportable chart components
-│   ├── dashboard/       # Dashboard components
-│   ├── export/          # Export dialog and utilities
-│   ├── filters/         # Advanced filter components
-│   ├── layout/          # Layout and navigation
-│   ├── pwa/             # PWA components
-│   ├── reports/         # Report builder
-│   ├── search/          # Global search
-│   ├── settings/        # Settings components
-│   └── visualizations/  # 3D and persistence visualizations
-├── contexts/            # React contexts (Theme, Realtime)
-├── hooks/               # Custom React hooks
-├── pages/               # Page components
-└── utils/               # Utility functions
-```
+- [API Documentation](docs/API.md)
+- [Deployment Guide](docs/DEPLOYMENT.md)
+- [Screenshots & Demos](docs/SCREENSHOTS.md)
 
-## Technologies Used
+## 🤝 Contributing
 
-- **React 18** - UI framework
-- **TypeScript** - Type safety
-- **Three.js / React Three Fiber** - 3D visualizations
-- **Recharts** - 2D charts
-- **React Router** - Routing
-- **Vite** - Build tool
-- **PWA** - Progressive Web App support
+We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
 
-## Development
+## 📄 License
 
-The project uses Vite for fast development and building. The development server runs on `http://localhost:3000` by default.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## License
+## 🛡 Security
 
-MIT
+For security concerns, please refer to our [Security Policy](SECURITY.md).

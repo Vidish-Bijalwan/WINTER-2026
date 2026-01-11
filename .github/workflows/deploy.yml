@@ -1,0 +1,56 @@
+name: Deploy
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
+      - name: Build and push Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/topoforge-frontend:latest
+            ghcr.io/${{ github.repository_owner }}/topoforge-frontend:${{ github.ref_name }}
+            
+      - name: Build and push Backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/topoforge-backend:latest
+            ghcr.io/${{ github.repository_owner }}/topoforge-backend:${{ github.ref_name }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+      - name: Trigger Deployment Webhook
+        # Example of triggering external deployment (e.g. Railway, Portainer)
+        run: echo "Deployment triggered for version ${{ github.ref_name }}"
+        # In real scenario: curl -X POST ${{ secrets.DEPLOY_WEBHOOK_URL }}
