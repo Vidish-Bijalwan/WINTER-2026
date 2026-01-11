@@ -17,7 +17,16 @@ import {
   TrendingUp,
   Globe,
   Activity,
-  Trash2
+  Trash2,
+  Newspaper,
+  Code,
+  Cloud,
+  Coins,
+  Music,
+  Landmark,
+  Gamepad2,
+  Search,
+  Filter
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
@@ -48,6 +57,8 @@ const Sources = () => {
   const [sources, setSources] = useState<Source[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newSource, setNewSource] = useState({ name: "", url: "", type: "Custom", description: "" });
+  const [selectedCategory, setSelectedCategory] = useState<string>("All");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Initial static sources
   const staticSources = [
@@ -69,20 +80,56 @@ const Sources = () => {
     // For now, keeping them as "System" sources and merging with DB sources.
   ];
 
+  // Icon mapping for different source types
+  const getIconForType = (type: string) => {
+    const iconMap: Record<string, any> = {
+      'Social Media': MessageSquare,
+      'News & Media': Newspaper,
+      'Development': Code,
+      'Environmental': Cloud,
+      'Geographic': Globe,
+      'Finance': Coins,
+      'Cybersecurity': Shield,
+      'Gaming': Gamepad2,
+      'Culture': Music,
+      'Government': Landmark,
+    };
+    return iconMap[type] || Database;
+  };
+
+  // Color mapping for different source types
+  const getColorForType = (type: string) => {
+    const colorMap: Record<string, { color: string; bgColor: string }> = {
+      'Social Media': { color: 'text-blue-500', bgColor: 'bg-blue-500/10' },
+      'News & Media': { color: 'text-orange-500', bgColor: 'bg-orange-500/10' },
+      'Development': { color: 'text-purple-500', bgColor: 'bg-purple-500/10' },
+      'Environmental': { color: 'text-green-500', bgColor: 'bg-green-500/10' },
+      'Geographic': { color: 'text-cyan-500', bgColor: 'bg-cyan-500/10' },
+      'Finance': { color: 'text-yellow-500', bgColor: 'bg-yellow-500/10' },
+      'Cybersecurity': { color: 'text-red-500', bgColor: 'bg-red-500/10' },
+      'Gaming': { color: 'text-pink-500', bgColor: 'bg-pink-500/10' },
+      'Culture': { color: 'text-indigo-500', bgColor: 'bg-indigo-500/10' },
+      'Government': { color: 'text-slate-500', bgColor: 'bg-slate-500/10' },
+    };
+    return colorMap[type] || { color: 'text-gray-500', bgColor: 'bg-gray-500/10' };
+  };
+
   const fetchSources = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/sources/`);
       if (response.ok) {
         const data = await response.json();
-        const dbSources = data.map((s: any) => ({
-          ...s,
-          icon: Database, // Default icon for custom sources
-          protocol: 'REST',
-          eventsPerSecond: 0,
-          totalEvents: 0,
-          color: 'text-green-500',
-          bgColor: 'bg-green-500/10'
-        }));
+        const dbSources = data.map((s: any) => {
+          const colors = getColorForType(s.type);
+          return {
+            ...s,
+            icon: getIconForType(s.type),
+            protocol: s.protocol || 'REST',
+            eventsPerSecond: 0,
+            totalEvents: 0,
+            ...colors
+          };
+        });
         setSources([...staticSources, ...dbSources]);
       }
     } catch (error) {
@@ -137,6 +184,17 @@ const Sources = () => {
     }
     // For DB sources, we could add an update endpoint to toggle 'active' status
   };
+
+  // Get unique categories
+  const categories = ["All", ...Array.from(new Set(sources.map(s => s.type)))];
+
+  // Filter sources
+  const filteredSources = sources.filter(source => {
+    const matchesCategory = selectedCategory === "All" || source.type === selectedCategory;
+    const matchesSearch = source.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      source.description.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -195,9 +253,36 @@ const Sources = () => {
           </Dialog>
         </div>
 
+        {/* Search and Filter Bar */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search sources..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {categories.map((category) => (
+              <Button
+                key={category}
+                variant={selectedCategory === category ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedCategory(category)}
+                className="whitespace-nowrap"
+              >
+                {category === "All" && <Filter className="w-3 h-3 mr-1" />}
+                {category}
+              </Button>
+            ))}
+          </div>
+        </div>
+
         {/* Data Sources Grid */}
         <div className="grid gap-4">
-          {sources.map((source, i) => {
+          {filteredSources.map((source, i) => {
             const Icon = source.icon;
             return (
               <motion.div
