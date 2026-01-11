@@ -3,7 +3,7 @@
  * Handles all HTTP requests, token management, and error handling
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 interface LoginCredentials {
     username: string; // Can be email or username

@@ -4,6 +4,7 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStr
 import { Button } from "@/components/ui/button";
 import { Plus, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { API_BASE_URL } from "@/lib/api";
 import Navigation from "@/components/Navigation";
 import LiveEventFeed from "@/components/LiveEventFeed";
 import AnomalyTimeline from "@/components/AnomalyTimeline";
@@ -115,7 +116,7 @@ export default function Dashboard() {
   };
 
   const handleExport = () => {
-    window.open('http://localhost:8000/api/anomalies/export?format=csv', '_blank');
+    window.open(`${API_BASE_URL}/api/anomalies/export?format=csv`, '_blank');
     toast({
       title: "Export Started",
       description: "Downloading anomaly data as CSV...",
