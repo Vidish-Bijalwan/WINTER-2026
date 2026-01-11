@@ -24,6 +24,9 @@ import { Badge } from "./ui/badge";
 import { cn } from "@/lib/utils";
 import { getCurrentUser, logout } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+import { NotificationsPopover } from "./NotificationsPopover";
+import { CommandPalette } from "./CommandPalette";
+import { ThemeToggle } from "./theme/ThemeToggle";
 
 const navItems = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -173,15 +176,16 @@ export function Navigation({ className }: { className?: string }) {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon">
-            <Search className="w-4 h-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="w-4 h-4" />
-            {alertCount > 0 && (
-              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full" />
-            )}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}>
+              <Search className="w-4 h-4" />
+            </Button>
+            <span data-tour="theme-toggle">
+              <ThemeToggle />
+            </span>
+            <CommandPalette />
+          </div>
+          <NotificationsPopover />
         </div>
       </div>
 

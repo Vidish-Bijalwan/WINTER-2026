@@ -39,9 +39,16 @@ app.add_middleware(
 # Auth Middleware
 app.add_middleware(AuthMiddleware)
 
-from .api.routes import auth, anomalies, users, realtime
+# Rate Limiting
+from .middleware.rate_limiter import limiter
+from slowapi.middleware import SlowAPIMiddleware
+app.state.limiter = limiter
+app.add_middleware(SlowAPIMiddleware)
+
+from .api.routes import auth, anomalies, users, realtime, password_reset
 # Include Routers
 app.include_router(auth.router)
+app.include_router(password_reset.router)
 app.include_router(anomalies.router)
 app.include_router(users.router)
 app.include_router(realtime.router)
