@@ -105,14 +105,32 @@ const EventItem = React.forwardRef<HTMLDivElement, { event: WikipediaEvent; inde
   });
 
 export function LiveEventFeed({ className, maxItems = 15 }: LiveEventFeedProps) {
-  const { recentEvents, isConnected, eventsPerSecond } = useWikipediaData();
+  const { events, isConnected, eventsPerSecond } = useWikipediaData();
+  const [recentEvents, setRecentEvents] = React.useState<WikipediaEvent[]>([]);
+  const [filter, setFilter] = React.useState<'all' | 'user' | 'bot'>('all');
 
-  const displayEvents = recentEvents.slice(0, maxItems);
+  React.useEffect(() => {
+    if (events.length > 0) {
+      setRecentEvents(prev => {
+        const newEvents = [...events, ...prev].slice(0, 50);
+        return newEvents;
+      });
+    }
+  }, [events]);
+
+  const filteredEvents = recentEvents.filter(e => {
+    if (filter === 'all') return true;
+    if (filter === 'bot') return e.bot;
+    if (filter === 'user') return !e.bot;
+    return true;
+  });
+
+  const displayEvents = filteredEvents.slice(0, maxItems);
 
   return (
-    <div className={cn("relative", className)}>
+    <div className={cn("relative h-full flex flex-col", className)}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-2 px-1">
+      <div className="flex items-center justify-between mb-2 px-1 shrink-0">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">Live Feed</span>
           {isConnected && (
@@ -126,33 +144,54 @@ export function LiveEventFeed({ className, maxItems = 15 }: LiveEventFeedProps) 
             </motion.div>
           )}
         </div>
-        <ArrowUpDown className="w-3 h-3 text-muted-foreground" />
+        <div className="flex items-center gap-1 bg-slate-800/50 rounded-lg p-0.5">
+          <button
+            onClick={() => setFilter('all')}
+            className={cn("px-2 py-0.5 text-[10px] rounded transition-colors", filter === 'all' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground")}
+          >
+            All
+          </button>
+          <button
+            onClick={() => setFilter('user')}
+            className={cn("px-2 py-0.5 text-[10px] rounded transition-colors", filter === 'user' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground")}
+          >
+            User
+          </button>
+          <button
+            onClick={() => setFilter('bot')}
+            className={cn("px-2 py-0.5 text-[10px] rounded transition-colors", filter === 'bot' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground")}
+          >
+            Bot
+          </button>
+        </div>
       </div>
 
       {/* Event list */}
-      <ScrollArea className="h-[300px] pr-2">
-        <AnimatePresence mode="popLayout" initial={false}>
-          {displayEvents.length > 0 ? (
-            displayEvents.map((event, i) => (
-              <EventItem key={event.id} event={event} index={i} />
-            ))
-          ) : (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="py-8 text-center text-muted-foreground"
-            >
-              <p className="text-xs">
-                {isConnected ? "Waiting for events..." : "Connect to see live edits"}
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
+      <ScrollArea className="flex-1 pr-2 -mr-2">
+        <div className="pr-2">
+          <AnimatePresence mode="popLayout" initial={false}>
+            {displayEvents.length > 0 ? (
+              displayEvents.map((event, i) => (
+                <EventItem key={event.id} event={event} index={i} />
+              ))
+            ) : (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="py-8 text-center text-muted-foreground"
+              >
+                <p className="text-xs">
+                  {isConnected ? "Waiting for events..." : "Connect to see live edits"}
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </ScrollArea>
 
       {/* Stats footer */}
       {isConnected && displayEvents.length > 0 && (
-        <div className="mt-2 pt-2 border-t border-border/30 flex items-center justify-between text-[10px] text-muted-foreground">
+        <div className="mt-2 pt-2 border-t border-border/30 flex items-center justify-between text-[10px] text-muted-foreground shrink-0">
           <span>{displayEvents.filter(e => e.bot).length} bot edits</span>
           <span>{displayEvents.filter(e => e.type === 'new').length} new articles</span>
         </div>

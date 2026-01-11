@@ -26,12 +26,19 @@ class AnomalyLogSchema(BaseModel):
 class UserSchema(BaseModel):
     username: str
     email: EmailStr
+    full_name: Optional[str] = None
+    organization: Optional[str] = None
     role: str = "viewer"
     created_at: datetime = Field(default_factory=datetime.utcnow)
     last_login: Optional[datetime] = None
 
-class UserCreateSchema(UserSchema):
-    password: str
+class UserCreateSchema(BaseModel):
+    username: str = Field(..., min_length=3, max_length=50)
+    email: EmailStr
+    password: str = Field(..., min_length=8, max_length=100)
+    full_name: Optional[str] = Field(None, max_length=100)
+    organization: Optional[str] = Field(None, max_length=100)
+    role: str = "viewer"
 
 class UserInDB(UserSchema):
     hashed_password: str

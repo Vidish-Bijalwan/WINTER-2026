@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import Navigation from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useWikipediaData } from "@/context/WikipediaDataContext";
 import RiskHeatmap from "@/components/RiskHeatmap";
 import { IPReputationTracker } from "@/components/IPReputationTracker";
@@ -132,9 +133,26 @@ const Analytics = () => {
             </motion.p>
           </div>
 
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Calendar className="w-4 h-4" />
-            <span>Last updated: {new Date().toLocaleTimeString()}</span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 bg-slate-800/50 p-1 rounded-lg border border-slate-700/50">
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs hover:bg-slate-700">
+                1h
+              </Button>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs bg-slate-700 text-white shadow-sm">
+                24h
+              </Button>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs hover:bg-slate-700">
+                7d
+              </Button>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs hover:bg-slate-700">
+                30d
+              </Button>
+            </div>
+
+            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-slate-800/30 px-3 py-1.5 rounded-md border border-slate-700/30">
+              <Calendar className="w-4 h-4" />
+              <span>{new Date().toLocaleDateString()}</span>
+            </div>
           </div>
         </div>
 
@@ -154,8 +172,8 @@ const Analytics = () => {
                       <card.icon className={`w-5 h-5 ${card.color}`} />
                     </div>
                     <div className={`flex items-center gap-1 text-xs ${card.trend === 'up' ? 'text-success' :
-                        card.trend === 'down' ? 'text-critical' :
-                          'text-muted-foreground'
+                      card.trend === 'down' ? 'text-critical' :
+                        'text-muted-foreground'
                       }`}>
                       {card.trend === 'up' && <TrendingUp className="w-3 h-3" />}
                       {card.trend === 'down' && <TrendingDown className="w-3 h-3" />}
