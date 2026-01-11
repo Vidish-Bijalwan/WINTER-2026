@@ -1,1 +1,0 @@
-import{z as r}from"./index--xrktNsK.js";import{ai as t,aj as a}from"./_baseAssignValue-Dol-jihx.js";var s=a,i=t,o="[object Number]";function b(e){return typeof e=="number"||i(e)&&s(e)==o}var m=b;const c=r(m);export{c as e,m as i};
