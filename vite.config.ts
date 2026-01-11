@@ -21,4 +21,23 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Prevent files from starting with "_" which can cause issues with GitHub Pages
+        sanitizeFileName: (name) => {
+          // Allow alphanumeric, underscores, hyphens, and dots
+          const sanitized = name.replace(/[^a-z0-9_.-]/gi, '_');
+          // Remove leading underscores
+          return sanitized.replace(/^_/, '');
+        },
+        // Manual chunks to ensure better caching and avoid huge files
+        manualChunks: (id) => {
+          if (id.includes('node_modules')) {
+            return 'vendor';
+          }
+        },
+      },
+    },
+  },
 }));

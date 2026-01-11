@@ -45,13 +45,14 @@ from slowapi.middleware import SlowAPIMiddleware
 app.state.limiter = limiter
 app.add_middleware(SlowAPIMiddleware)
 
-from .api.routes import auth, anomalies, users, realtime, password_reset
+from .api.routes import auth, anomalies, users, realtime, password_reset, sources
 # Include Routers
 app.include_router(auth.router)
 app.include_router(password_reset.router)
 app.include_router(anomalies.router)
 app.include_router(users.router)
 app.include_router(realtime.router)
+app.include_router(sources.router)
 
 # WebSocket Connection Manager (Preserved/Refined)
 from typing import List
@@ -89,7 +90,20 @@ async def websocket_endpoint(websocket: WebSocket):
         while True:
             data_text = await websocket.receive_text()
             try:
-                event = json.loads(data_text)
+                message = json.loads(data_text)
+                
+                # Handle Configuration Updates
+                if message.get("type") == "config":
+                    processor.update_config(message.get("payload", {}))
+                    continue
+                
+                # Handle Data Events (Default)
+                # Support both raw event and wrapped {type: "event", payload: ...}
+                if message.get("type") == "event":
+                    event = message.get("payload", {})
+                else:
+                    event = message
+
                 processor.ingest(event)
                 
                 # Run analysis

@@ -24,11 +24,14 @@ class AnomalyLogModel:
         cursor = database[self.collection_name].find({"is_anomaly": True})
         return await cursor.to_list(length=None)
 
-    async def export_to_csv(self):
-        # Placeholder for export logic, typically returns list of dicts
+    async def get_all_logs(self):
         database = db_connection.get_database()
-        cursor = database[self.collection_name].find()
+        cursor = database[self.collection_name].find().sort("timestamp", -1)
         return await cursor.to_list(length=None)
+
+    def get_all_logs_cursor(self):
+        database = db_connection.get_database()
+        return database[self.collection_name].find().sort("timestamp", -1)
 
 class UserModel:
     def __init__(self):
@@ -94,3 +97,22 @@ class AlertConfigModel:
             {"_id": ObjectId(config_id)}, {"$set": update_data}
         )
         return result.modified_count
+
+class SourceModel:
+    def __init__(self):
+        self.collection_name = "data_sources"
+
+    async def create_source(self, source_data: Dict[str, Any]):
+        database = db_connection.get_database()
+        result = await database[self.collection_name].insert_one(source_data)
+        return str(result.inserted_id)
+
+    async def get_all_sources(self):
+        database = db_connection.get_database()
+        cursor = database[self.collection_name].find()
+        return await cursor.to_list(length=None)
+
+    async def delete_source(self, source_id: str):
+        database = db_connection.get_database()
+        result = await database[self.collection_name].delete_one({"_id": ObjectId(source_id)})
+        return result.deleted_count

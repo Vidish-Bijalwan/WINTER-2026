@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { 
+import {
   Settings as SettingsIcon,
   Bell,
   Palette,
@@ -18,30 +18,40 @@ import {
   Sun,
   Monitor
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useTopoForge } from "@/hooks/useTopoForge";
 
 const Settings = () => {
   const [notifications, setNotifications] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [autoConnect, setAutoConnect] = useState(true);
   const [analysisInterval, setAnalysisInterval] = useState([2]);
-  const [anomalyThreshold, setAnomalyThreshold] = useState([70]);
+  const [anomalyThreshold, setAnomalyThreshold] = useState([65]);
+  const { sendConfig } = useTopoForge();
+
+  // Debounce config updates
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      sendConfig({ anomaly_threshold: anomalyThreshold[0] });
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [anomalyThreshold, sendConfig]);
 
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      
+
       <main className="pt-20 pb-8 px-4 sm:px-6 lg:px-8 max-w-[800px] mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <motion.h1 
+          <motion.h1
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-2xl font-bold"
           >
             Settings
           </motion.h1>
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.1 }}
@@ -75,7 +85,7 @@ const Settings = () => {
                   </div>
                   <Switch checked={notifications} onCheckedChange={setNotifications} />
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <div>
                     <Label className="text-sm font-medium">Sound Alerts</Label>
@@ -112,7 +122,7 @@ const Settings = () => {
                   </div>
                   <Switch checked={autoConnect} onCheckedChange={setAutoConnect} />
                 </div>
-                
+
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Label className="text-sm font-medium">Analysis Interval</Label>
@@ -130,7 +140,7 @@ const Settings = () => {
                     How often to compute topological features
                   </p>
                 </div>
-                
+
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Label className="text-sm font-medium">Anomaly Threshold</Label>
@@ -217,7 +227,7 @@ const Settings = () => {
                   <span className="font-mono">Real-time Betti</span>
                 </div>
                 <p className="text-xs text-muted-foreground pt-2 border-t border-border">
-                  TopoForge uses Topological Data Analysis to detect anomalies in high-dimensional 
+                  TopoForge uses Topological Data Analysis to detect anomalies in high-dimensional
                   streaming data by tracking changes in the shape and structure of data over time.
                 </p>
               </CardContent>

@@ -16,41 +16,40 @@ import {
   Power,
   TrendingUp,
   Globe,
-  Activity
+  Activity,
+  Trash2
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+
+interface Source {
+  id: string;
+  name: string;
+  description: string;
+  type: string;
+  protocol: string;
+  icon: any;
+  url: string;
+  eventsPerSecond: number;
+  totalEvents: number;
+  color: string;
+  bgColor: string;
+  active: boolean;
+}
 
 const Sources = () => {
   const { isConnected, connect, disconnect, eventsPerSecond, totalEventsProcessed } = useWikipediaData();
+  const { toast } = useToast();
+  const [sources, setSources] = useState<Source[]>([]);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [newSource, setNewSource] = useState({ name: "", url: "", type: "Custom", description: "" });
 
-  // Mock active states for other sources
-  const [activeSourcesState, setActiveSourcesState] = useState({
-    wikipedia: isConnected,
-    kaspersky: true,
-    bitdefender: true,
-    anyrun: true,
-    crypto: false,
-    github: false,
-    reddit: false,
-  });
-
-  const toggleSource = (sourceId: string) => {
-    if (sourceId === 'wikipedia') {
-      if (isConnected) {
-        disconnect();
-      } else {
-        connect();
-      }
-    } else {
-      setActiveSourcesState(prev => ({
-        ...prev,
-        [sourceId]: !prev[sourceId as keyof typeof activeSourcesState]
-      }));
-    }
-  };
-
-  const allSources = [
+  // Initial static sources
+  const staticSources = [
     {
       id: 'wikipedia',
       name: 'Wikipedia Recent Changes',
@@ -63,99 +62,80 @@ const Sources = () => {
       totalEvents: isConnected ? totalEventsProcessed : 0,
       color: 'text-blue-500',
       bgColor: 'bg-blue-500/10',
+      active: isConnected
     },
-    {
-      id: 'kaspersky',
-      name: 'Kaspersky Threat Intelligence',
-      description: 'Global threat data from Kaspersky Lab security network',
-      type: 'Threat Intel',
-      protocol: 'Mock Stream',
-      icon: Shield,
-      url: 'threat.kaspersky.com',
-      eventsPerSecond: activeSourcesState.kaspersky ? 15 : 0,
-      totalEvents: activeSourcesState.kaspersky ? 8245 : 0,
-      color: 'text-red-500',
-      bgColor: 'bg-red-500/10',
-    },
-    {
-      id: 'bitdefender',
-      name: 'Bitdefender Threat Feed',
-      description: 'Advanced malware and exploit intelligence from Bitdefender',
-      type: 'Threat Intel',
-      protocol: 'Mock Stream',
-      icon: Shield,
-      url: 'intel.bitdefender.com',
-      eventsPerSecond: activeSourcesState.bitdefender ? 12 : 0,
-      totalEvents: activeSourcesState.bitdefender ? 5632 : 0,
-      color: 'text-orange-500',
-      bgColor: 'bg-orange-500/10',
-    },
-    {
-      id: 'anyrun',
-      name: 'ANY.RUN Malware Sandbox',
-      description: 'Interactive malware analysis results and behavioral data',
-      type: 'Threat Intel',
-      protocol: 'Mock Stream',
-      icon: Shield,
-      url: 'api.any.run',
-      eventsPerSecond: activeSourcesState.anyrun ? 5 : 0,
-      totalEvents: activeSourcesState.anyrun ? 1891 : 0,
-      color: 'text-purple-500',
-      bgColor: 'bg-purple-500/10',
-    },
-    {
-      id: 'crypto',
-      name: 'Cryptocurrency Market Data',
-      description: 'Real-time crypto prices, volumes, and anomaly detection',
-      type: 'Financial',
-      protocol: 'Mock Stream',
-      icon: DollarSign,
-      url: 'api.crypto.com',
-      eventsPerSecond: activeSourcesState.crypto ? 30 : 0,
-      totalEvents: activeSourcesState.crypto ? 12453 : 0,
-      color: 'text-green-500',
-      bgColor: 'bg-green-500/10',
-    },
-    {
-      id: 'github',
-      name: 'GitHub Public Events',
-      description: 'Public repository events: pushes, PRs, issues, stars, forks',
-      type: 'Developer',
-      protocol: 'Mock Stream',
-      icon: GitBranch,
-      url: 'api.github.com',
-      eventsPerSecond: activeSourcesState.github ? 25 : 0,
-      totalEvents: activeSourcesState.github ? 9876 : 0,
-      color: 'text-gray-300',
-      bgColor: 'bg-gray-500/10',
-    },
-    {
-      id: 'reddit',
-      name: 'Reddit Trending Feed',
-      description: 'Trending posts, sentiment analysis, and discussion monitoring',
-      type: 'Social Media',
-      protocol: 'Mock Stream',
-      icon: MessageSquare,
-      url: 'oauth.reddit.com',
-      eventsPerSecond: activeSourcesState.reddit ? 10 : 0,
-      totalEvents: activeSourcesState.reddit ? 4321 : 0,
-      color: 'text-orange-400',
-      bgColor: 'bg-orange-400/10',
-    },
+    // ... other static sources can be kept or migrated to DB. 
+    // For now, keeping them as "System" sources and merging with DB sources.
   ];
 
-  const activeCount = Object.values(activeSourcesState).filter(Boolean).length;
-  const totalEventsSum = allSources.reduce((sum, s) => sum + s.totalEvents, 0);
-  const totalThroughput = allSources.reduce((sum, s) => sum + s.eventsPerSecond, 0);
+  const fetchSources = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/api/sources/');
+      if (response.ok) {
+        const data = await response.json();
+        const dbSources = data.map((s: any) => ({
+          ...s,
+          icon: Database, // Default icon for custom sources
+          protocol: 'REST',
+          eventsPerSecond: 0,
+          totalEvents: 0,
+          color: 'text-green-500',
+          bgColor: 'bg-green-500/10'
+        }));
+        setSources([...staticSources, ...dbSources]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch sources:", error);
+      setSources(staticSources);
+    }
+  };
 
-  const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  useEffect(() => {
+    fetchSources();
+  }, [isConnected, eventsPerSecond, totalEventsProcessed]);
 
-  const filteredSources = allSources.filter(source => {
-    const isActive = activeSourcesState[source.id as keyof typeof activeSourcesState];
-    if (filter === 'active') return isActive;
-    if (filter === 'inactive') return !isActive;
-    return true;
-  });
+  const handleAddSource = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/api/sources/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newSource)
+      });
+
+      if (response.ok) {
+        toast({ title: "Source Added", description: "New data source configured successfully." });
+        setIsAddDialogOpen(false);
+        setNewSource({ name: "", url: "", type: "Custom", description: "" });
+        fetchSources();
+      } else {
+        toast({ title: "Error", description: "Failed to add source.", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "Network error.", variant: "destructive" });
+    }
+  };
+
+  const handleDeleteSource = async (id: string) => {
+    if (id === 'wikipedia') return; // Protect system source
+    try {
+      const response = await fetch(`http://localhost:8000/api/sources/${id}`, {
+        method: 'DELETE'
+      });
+      if (response.ok) {
+        toast({ title: "Source Deleted", description: "Data source removed." });
+        fetchSources();
+      }
+    } catch (error) {
+      console.error("Delete failed", error);
+    }
+  };
+
+  const toggleSource = (sourceId: string) => {
+    if (sourceId === 'wikipedia') {
+      isConnected ? disconnect() : connect();
+    }
+    // For DB sources, we could add an update endpoint to toggle 'active' status
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -173,125 +153,51 @@ const Sources = () => {
               <Database className="w-6 h-6 text-primary" />
               Data Sources
             </motion.h1>
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.1 }}
-              className="text-sm text-muted-foreground mt-1"
-            >
+            <p className="text-sm text-muted-foreground mt-1">
               Manage your real-time data stream connections
-            </motion.p>
+            </p>
           </div>
 
-          <Button variant="default" size="sm" className="gap-2">
-            <Plus className="w-4 h-4" />
-            Add Custom Source
-          </Button>
-        </div>
-
-        {/* Summary Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-2">
-                  <Database className="w-5 h-5 text-primary" />
-                  <Badge variant="success">{activeCount} active</Badge>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="default" size="sm" className="gap-2">
+                <Plus className="w-4 h-4" />
+                Add Custom Source
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="bg-slate-900 border-slate-800 text-slate-100">
+              <DialogHeader>
+                <DialogTitle>Add New Data Source</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="name">Name</Label>
+                  <Input id="name" value={newSource.name} onChange={e => setNewSource({ ...newSource, name: e.target.value })} className="bg-slate-800 border-slate-700" />
                 </div>
-                <div className="text-2xl font-bold">{allSources.length}</div>
-                <div className="text-xs text-muted-foreground">Total Sources</div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-2">
-                  <TrendingUp className="w-5 h-5 text-success" />
+                <div className="grid gap-2">
+                  <Label htmlFor="url">URL / Endpoint</Label>
+                  <Input id="url" value={newSource.url} onChange={e => setNewSource({ ...newSource, url: e.target.value })} className="bg-slate-800 border-slate-700" />
                 </div>
-                <div className="text-2xl font-bold text-success">{totalThroughput}/s</div>
-                <div className="text-xs text-muted-foreground">Total Throughput</div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-2">
-                  <Radio className="w-5 h-5 text-info" />
+                <div className="grid gap-2">
+                  <Label htmlFor="type">Type</Label>
+                  <Input id="type" value={newSource.type} onChange={e => setNewSource({ ...newSource, type: e.target.value })} className="bg-slate-800 border-slate-700" />
                 </div>
-                <div className="text-2xl font-bold">{totalEventsSum.toLocaleString()}</div>
-                <div className="text-xs text-muted-foreground">Total Events</div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-2">
-                  <Shield className="w-5 h-5 text-red-500" />
+                <div className="grid gap-2">
+                  <Label htmlFor="desc">Description</Label>
+                  <Input id="desc" value={newSource.description} onChange={e => setNewSource({ ...newSource, description: e.target.value })} className="bg-slate-800 border-slate-700" />
                 </div>
-                <div className="text-2xl font-bold text-red-500">
-                  {activeSourcesState.kaspersky && activeSourcesState.bitdefender && activeSourcesState.anyrun ? '3' : '0'}
-                </div>
-                <div className="text-xs text-muted-foreground">Threat Intel Feeds</div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
-
-        {/* Filters */}
-        <div className="flex items-center gap-2 mb-6">
-          <Button
-            variant={filter === 'all' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setFilter('all')}
-            className="h-8"
-          >
-            All Sources
-          </Button>
-          <Button
-            variant={filter === 'active' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setFilter('active')}
-            className="h-8"
-          >
-            Active
-          </Button>
-          <Button
-            variant={filter === 'inactive' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setFilter('inactive')}
-            className="h-8"
-          >
-            Inactive
-          </Button>
+              </div>
+              <DialogFooter>
+                <Button onClick={handleAddSource}>Add Source</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Data Sources Grid */}
         <div className="grid gap-4">
-          {filteredSources.map((source, i) => {
-            const isActive = activeSourcesState[source.id as keyof typeof activeSourcesState];
+          {sources.map((source, i) => {
             const Icon = source.icon;
-
             return (
               <motion.div
                 key={source.id}
@@ -302,17 +208,16 @@ const Sources = () => {
                 <Card className="overflow-hidden hover:border-primary/30 transition-all group">
                   <CardContent className="p-6">
                     <div className="flex items-start gap-4">
-                      <div className={`p-3 rounded-xl ${isActive ? source.bgColor : 'bg-muted'} transition-colors`}>
-                        <Icon className={`w-6 h-6 ${isActive ? source.color : 'text-muted-foreground'}`} />
+                      <div className={`p-3 rounded-xl ${source.active ? source.bgColor : 'bg-muted'} transition-colors`}>
+                        <Icon className={`w-6 h-6 ${source.active ? source.color : 'text-muted-foreground'}`} />
                       </div>
 
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="font-semibold">{source.name}</h3>
-                          {isActive && (
+                          {source.active ? (
                             <Badge variant="success" className="animate-pulse">Live</Badge>
-                          )}
-                          {!isActive && (
+                          ) : (
                             <Badge variant="outline">Inactive</Badge>
                           )}
                           <Badge variant="secondary" className="text-[10px]">{source.type}</Badge>
@@ -323,48 +228,25 @@ const Sources = () => {
                         </p>
 
                         <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1" title="Protocol">
-                            <Database className="w-3 h-3" />
-                            {source.protocol}
-                          </span>
-                          <span className="font-mono" title="Endpoint">{source.url}</span>
-                          {isActive && (
-                            <span className="flex items-center gap-1 text-success" title="Latency">
-                              <Activity className="w-3 h-3" />
-                              {Math.floor(Math.random() * 50 + 10)}ms
-                            </span>
-                          )}
+                          <span className="font-mono">{source.url}</span>
                         </div>
-
-                        {/* Sparkline visualization */}
-                        {isActive && (
-                          <div className="mt-3 h-8 flex items-end gap-0.5 opacity-50 group-hover:opacity-100 transition-opacity">
-                            {Array.from({ length: 40 }).map((_, idx) => (
-                              <div
-                                key={idx}
-                                className={cn("w-1 rounded-t-sm", source.color.replace('text-', 'bg-'))}
-                                style={{ height: `${Math.random() * 100}%` }}
-                              />
-                            ))}
-                          </div>
-                        )}
                       </div>
 
                       <div className="flex items-center gap-2">
-                        {isActive && source.id === 'wikipedia' && (
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <RefreshCw className="w-4 h-4" />
+                        {source.id === 'wikipedia' ? (
+                          <Button
+                            variant={source.active ? "outline" : "default"}
+                            size="sm"
+                            onClick={() => toggleSource(source.id)}
+                          >
+                            <Power className="w-4 h-4 mr-2" />
+                            {source.active ? 'Disconnect' : 'Connect'}
+                          </Button>
+                        ) : (
+                          <Button variant="ghost" size="icon" onClick={() => handleDeleteSource(source.id)} className="text-red-500 hover:text-red-400 hover:bg-red-500/10">
+                            <Trash2 className="w-4 h-4" />
                           </Button>
                         )}
-                        <Button
-                          variant={isActive ? "outline" : "default"}
-                          size="sm"
-                          onClick={() => toggleSource(source.id)}
-                          className={isActive ? "text-critical hover:text-critical hover:bg-critical/10" : ""}
-                        >
-                          <Power className="w-4 h-4 mr-2" />
-                          {isActive ? 'Disconnect' : 'Connect'}
-                        </Button>
                       </div>
                     </div>
                   </CardContent>
@@ -373,48 +255,6 @@ const Sources = () => {
             );
           })}
         </div>
-
-        {/* Info Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
-          className="mt-8"
-        >
-          <Card className="border-primary/20">
-            <CardContent className="p-6">
-              <h3 className="font-semibold mb-2 text-primary flex items-center gap-2">
-                <Shield className="w-5 h-5" />
-                About Threat Intelligence Feeds
-              </h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Our platform integrates with industry-leading threat intelligence providers to deliver
-                real-time security insights. Kaspersky, Bitdefender, and ANY.RUN provide complementary
-                data streams covering malware, exploits, phishing, and advanced persistent threats (APTs).
-              </p>
-              <div className="grid sm:grid-cols-3 gap-4">
-                <div className="p-3 bg-red-500/10 rounded-lg border border-red-500/20">
-                  <h4 className="text-sm font-semibold text-red-500 mb-1">Kaspersky</h4>
-                  <p className="text-xs text-muted-foreground">
-                    Global threat network with 400M+ endpoints
-                  </p>
-                </div>
-                <div className="p-3 bg-orange-500/10 rounded-lg border border-orange-500/20">
-                  <h4 className="text-sm font-semibold text-orange-500 mb-1">Bitdefender</h4>
-                  <p className="text-xs text-muted-foreground">
-                    Advanced malware detection and C2 tracking
-                  </p>
-                </div>
-                <div className="p-3 bg-purple-500/10 rounded-lg border border-purple-500/20">
-                  <h4 className="text-sm font-semibold text-purple-500 mb-1">ANY.RUN</h4>
-                  <p className="text-xs text-muted-foreground">
-                    Interactive sandbox behavioral analysis
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
       </main>
     </div>
   );

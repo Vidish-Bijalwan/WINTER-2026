@@ -2,8 +2,19 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 
 export interface AnalysisResult {
     betti_numbers: { h0: number; h1: number; h2: number };
+    topology_features?: {
+        entropy: number;
+        total_lifetime: number;
+    };
+    scores?: {
+        total: number;
+        betti: number;
+        entropy: number;
+        ml: number;
+    };
     anomaly_score: number;
     is_anomaly: boolean;
+    security_analysis?: any;
     window_size: number;
 }
 
@@ -67,5 +78,14 @@ export function useTopoForge(url: string = 'ws://localhost:8000/ws/stream') {
         }
     }, []);
 
-    return { isConnected, lastAnalysis, sendEvent };
+    const sendConfig = useCallback((config: any) => {
+        if (ws.current?.readyState === WebSocket.OPEN) {
+            ws.current.send(JSON.stringify({
+                type: 'config',
+                payload: config
+            }));
+        }
+    }, []);
+
+    return { isConnected, lastAnalysis, sendEvent, sendConfig };
 }

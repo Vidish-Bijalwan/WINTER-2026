@@ -72,3 +72,84 @@ class TopologyAnalyzer:
                 betti[f"h{dim}"] = int(significant)
             
         return betti
+
+    def compute_total_lifetime(self, diagrams) -> float:
+        """
+        Compute the sum of lifetimes of all features in the diagrams.
+        """
+        total_lifetime = 0.0
+        for dgm in diagrams:
+            if len(dgm) == 0: continue
+            # Filter out infinite death times (usually H0)
+            finite_dgm = dgm[dgm[:, 1] != np.inf]
+            if len(finite_dgm) > 0:
+                lifetimes = finite_dgm[:, 1] - finite_dgm[:, 0]
+                total_lifetime += np.sum(lifetimes)
+        return float(total_lifetime)
+
+    def compute_persistence_entropy(self, diagrams) -> float:
+        """
+        Compute the Shannon entropy of the persistence diagram.
+        High entropy = many features of similar size (noise/chaos).
+        Low entropy = few dominant features (structured).
+        """
+        total_lifetime = self.compute_total_lifetime(diagrams)
+        if total_lifetime == 0:
+            return 0.0
+            
+        entropy = 0.0
+        for dgm in diagrams:
+            if len(dgm) == 0: continue
+            finite_dgm = dgm[dgm[:, 1] != np.inf]
+            if len(finite_dgm) == 0: continue
+            
+            lifetimes = finite_dgm[:, 1] - finite_dgm[:, 0]
+            probs = lifetimes / total_lifetime
+            
+            # Avoid log(0)
+            probs = probs[probs > 0]
+            entropy -= np.sum(probs * np.log(probs))
+            
+        return float(entropy)
+
+    def compute_persistence_landscape(self, diagrams, resolution: int = 100) -> dict:
+        """
+        Compute the first layer of the persistence landscape for H1 features.
+        Returns x and y coordinates for plotting.
+        """
+        # Focus on H1 (loops) for now as they are most interesting for anomalies
+        if len(diagrams) < 2:
+            return {"x": [], "y": []}
+            
+        dgm = diagrams[1] # H1
+        if len(dgm) == 0:
+            return {"x": [], "y": []}
+            
+        # Filter finite features
+        finite_dgm = dgm[dgm[:, 1] != np.inf]
+        if len(finite_dgm) == 0:
+            return {"x": [], "y": []}
+            
+        # Define range for the landscape
+        min_birth = np.min(finite_dgm[:, 0])
+        max_death = np.max(finite_dgm[:, 1])
+        padding = (max_death - min_birth) * 0.1
+        t_vals = np.linspace(min_birth - padding, max_death + padding, resolution)
+        landscape_vals = np.zeros(resolution)
+        
+        # Compute 1st Landscape Layer (max envelope of triangle functions)
+        # For each point (b, d), f(t) = max(0, min(t-b, d-t))
+        for i, t in enumerate(t_vals):
+            vals = []
+            for pt in finite_dgm:
+                b, d = pt[0], pt[1]
+                val = max(0, min(t - b, d - t))
+                vals.append(val)
+            
+            if vals:
+                landscape_vals[i] = max(vals) # 1st layer is the maximum
+                
+        return {
+            "x": t_vals.tolist(),
+            "y": landscape_vals.tolist()
+        }

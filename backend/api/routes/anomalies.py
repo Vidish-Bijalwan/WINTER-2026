@@ -2,7 +2,11 @@ from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import List, Optional
 from ...database.models import AnomalyLogModel
 from ...database.schemas import AnomalyLogSchema
+from ...database.schemas import AnomalyLogSchema
 from datetime import datetime
+import csv
+import io
+from fastapi.responses import StreamingResponse
 
 router = APIRouter(prefix="/api/anomalies", tags=["Anomalies"])
 anomaly_model = AnomalyLogModel()
@@ -48,9 +52,55 @@ async def get_stats():
     }
 
 @router.get("/export")
-async def export_anomalies():
-    data = await anomaly_model.export_to_csv()
-    return {"message": "Export feature", "data_count": len(data)}
+async def export_anomalies(format: str = "csv"):
+    if format == "json":
+        logs = await anomaly_model.get_all_logs()
+        # Convert ObjectId and datetime to string for JSON
+        for log in logs:
+            log["_id"] = str(log["_id"])
+            if isinstance(log.get("timestamp"), datetime):
+                log["timestamp"] = log["timestamp"].isoformat()
+        return logs
+
+    # CSV Streaming Export
+    async def generate_csv():
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # Write Header
+        writer.writerow(["Timestamp", "Source", "Is Anomaly", "Score", "Severity", "Betti H0", "Betti H1", "Betti H2", "Entropy"])
+        yield output.getvalue()
+        output.seek(0)
+        output.truncate(0)
+
+        cursor = anomaly_model.get_all_logs_cursor()
+        async for log in cursor:
+            # Extract nested fields safely
+            scores = log.get("scores", {})
+            betti = log.get("betti_numbers", {})
+            topo = log.get("topology_features", {})
+            
+            writer.writerow([
+                log.get("timestamp", ""),
+                log.get("source", "Unknown"),
+                log.get("is_anomaly", False),
+                scores.get("total", 0) if scores else 0,
+                log.get("severity", "normal"),
+                betti.get("h0", 0) if betti else 0,
+                betti.get("h1", 0) if betti else 0,
+                betti.get("h2", 0) if betti else 0,
+                topo.get("entropy", 0) if topo else 0
+            ])
+            
+            yield output.getvalue()
+            output.seek(0)
+            output.truncate(0)
+
+    return StreamingResponse(
+        generate_csv(),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=anomalies_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"}
+    )
 
 @router.get("/{id}")
 async def get_anomaly(id: str):

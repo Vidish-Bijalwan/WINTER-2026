@@ -10,7 +10,7 @@ import {
     DialogClose
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Plus, Activity, Globe, ShieldAlert, GitGraph, FileText, BarChart3, AlignLeft, ScatterChart, PlayCircle } from "lucide-react";
+import { Plus, Activity, Globe, ShieldAlert, GitGraph, FileText, BarChart3, AlignLeft, ScatterChart, PlayCircle, Mountain } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface WidgetDefinition {
@@ -30,11 +30,25 @@ export const AVAILABLE_WIDGETS: WidgetDefinition[] = [
         defaultSize: 'medium'
     },
     {
+        id: 'anomaly-score',
+        title: 'Anomaly Score',
+        description: 'Real-time unified anomaly score with topological breakdown.',
+        icon: ShieldAlert,
+        defaultSize: 'medium'
+    },
+    {
         id: 'timeline',
         title: 'Anomaly Timeline',
         description: 'Historical view of detected anomalies over time.',
         icon: GitGraph,
         defaultSize: 'large'
+    },
+    {
+        id: 'landscape',
+        title: 'Persistence Landscape',
+        description: 'Functional representation of topological features (H1).',
+        icon: Mountain,
+        defaultSize: 'medium'
     },
     {
         id: 'threats',

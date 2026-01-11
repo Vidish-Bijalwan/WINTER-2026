@@ -20,6 +20,14 @@ class DataProcessor:
         self.security = ThreatClassifier()
         self.is_calibrated = False
         self.anomaly_model = AnomalyLogModel()
+        self.config = {
+            "anomaly_threshold": 65.0
+        }
+
+    def update_config(self, new_config: Dict[str, Any]):
+        """Update processor configuration dynamically."""
+        self.config.update(new_config)
+        logger.info(f"Processor config updated: {self.config}")
 
     def ingest(self, event: Dict[str, Any]):
         """
@@ -55,39 +63,82 @@ class DataProcessor:
         # 1. TDA Analysis
         diagrams = self.tda.compute_persistence(data)
         betti = self.tda.extract_betti_numbers(diagrams)
+        entropy = self.tda.compute_persistence_entropy(diagrams)
+        total_lifetime = self.tda.compute_total_lifetime(diagrams)
+        landscape = self.tda.compute_persistence_landscape(diagrams)
         
         # 2. ML Anomaly Detection
         ml_result = self.ml.predict(data[-1].reshape(1, -1))
+        ml_score = float(ml_result['severity'])
         
-        # 3. Security Classification
+        # 3. Anomaly Scoring Logic
+        # Weights: Betti (Structure) = 40%, Entropy (Chaos) = 30%, ML (Statistical) = 30%
+        
+        # Calculate Betti deviation (simple sum of H0+H1+H2)
+        current_betti_sum = sum(betti.values())
+        # Assuming baseline is roughly 1 component (H0=1) for stable data
+        betti_score = min(abs(current_betti_sum - 1) * 20, 100) 
+        
+        # Calculate Entropy score (higher entropy = more noise/anomalous)
+        # Normalize entropy (heuristic: > 5.0 is very high)
+        entropy_score = min(entropy * 20, 100)
+        
+        # Normalize ML score (assuming it's roughly 0-1, scale to 0-100)
+        # Isolation Forest score is usually negative, we inverted it to positive.
+        # It can be > 1 or < 0 depending on implementation, but usually around 0.5 is threshold.
+        ml_score_norm = min(max(ml_score * 100 + 50, 0), 100)
+        
+        # Weighted Sum
+        final_score = (0.4 * betti_score) + (0.3 * entropy_score) + (0.3 * ml_score_norm)
+        
+        # Determine anomaly status based on score
+        threshold = self.config.get("anomaly_threshold", 65.0)
+        is_anomaly = final_score > threshold
+        
+        # 4. Security Classification
         security_context = self.security.classify({
-            "anomaly_score": ml_result['severity'],
-            "betti_numbers": betti
+            "anomaly_score": final_score,
+            "betti_numbers": betti,
+            "entropy": entropy
         })
         
         result = {
             "betti_numbers": betti,
-            "anomaly_score": float(ml_result['severity']),
-            "is_anomaly": bool(ml_result['is_anomaly']),
+            "topology_features": {
+                "entropy": float(entropy),
+                "total_lifetime": float(total_lifetime),
+                "landscape": landscape
+            },
+            "scores": {
+                "total": float(final_score),
+                "betti": float(betti_score),
+                "entropy": float(entropy_score),
+                "ml": float(ml_score_norm)
+            },
+            "anomaly_score": float(final_score),
+            "is_anomaly": is_anomaly,
             "security_analysis": security_context,
             "window_size": len(data),
             "timestamp": datetime.utcnow()
         }
         
         # Log to Database if anomaly or periodically
-        # Logic: always log anomalies, maybe sample normals
         if result["is_anomaly"]:
             try:
                 await self.anomaly_model.create_log({
                     "timestamp": result["timestamp"],
                     "source_type": "stream_processor",
-                    "event_data": {"recent_values": data[-5:].tolist()}, # Store last few points
+                    "event_data": {"recent_values": data[-5:].tolist()},
                     "betti_h0": betti.get("h0", 0),
                     "betti_h1": betti.get("h1", 0),
                     "betti_h2": betti.get("h2", 0),
                     "anomaly_score": result["anomaly_score"],
                     "is_anomaly": True,
-                    "metadata": security_context
+                    "metadata": {
+                        **security_context,
+                        "scores": result["scores"],
+                        "topology": result["topology_features"]
+                    }
                 })
             except Exception as e:
                 logger.error(f"Failed to save anomaly log: {e}")

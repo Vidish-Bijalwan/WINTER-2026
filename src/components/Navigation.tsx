@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { useUI } from "@/context/UIContext";
 import {
   LayoutDashboard,
   Activity,
@@ -42,7 +43,7 @@ export function Navigation({ className }: { className?: string }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { isSidebarCollapsed, toggleSidebar, setSidebarCollapsed } = useUI();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [alertCount] = useState(3);
@@ -50,13 +51,31 @@ export function Navigation({ className }: { className?: string }) {
   const currentUser = getCurrentUser();
   const userInitials = currentUser ? currentUser.username.slice(0, 2).toUpperCase() : "JD";
 
+  // Auto-retract sidebar when clicking outside (on main content)
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const sidebar = document.getElementById('sidebar-nav');
+      const toggleBtn = document.getElementById('sidebar-toggle');
+
+      // If sidebar is expanded and click is NOT on sidebar or toggle button
+      if (!isSidebarCollapsed &&
+        sidebar &&
+        !sidebar.contains(event.target as Node) &&
+        toggleBtn &&
+        !toggleBtn.contains(event.target as Node)) {
+        setSidebarCollapsed(true);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isSidebarCollapsed, setSidebarCollapsed]);
+
   const handleLogout = () => {
     logout();
     toast({ title: "Logged Out", description: "You have been successfully logged out." });
     navigate("/login");
   };
-
-  const toggleCollapse = () => setIsCollapsed(!isCollapsed);
 
   // Generate breadcrumbs
   const pathSegments = location.pathname.split('/').filter(Boolean);
@@ -81,16 +100,17 @@ export function Navigation({ className }: { className?: string }) {
 
       {/* Desktop Sidebar */}
       <motion.nav
+        id="sidebar-nav"
         initial={false}
-        animate={{ width: isCollapsed ? "80px" : "280px" }}
+        animate={{ width: isSidebarCollapsed ? "80px" : "280px" }}
         className={cn(
           "hidden md:flex fixed left-0 top-0 bottom-0 bg-background/95 backdrop-blur-md border-r border-border z-40 flex-col transition-all duration-300",
           className
         )}
       >
         {/* Header */}
-        <div className={cn("p-6 flex items-center", isCollapsed ? "justify-center" : "justify-between")}>
-          {!isCollapsed && (
+        <div className={cn("p-6 flex items-center", isSidebarCollapsed ? "justify-center" : "justify-between")}>
+          {!isSidebarCollapsed && (
             <Link to="/" className="flex items-center gap-2 group">
               <div className="relative w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/50 flex items-center justify-center overflow-hidden">
                 <Layers className="w-4 h-4 text-primary-foreground relative z-10" />
@@ -98,8 +118,8 @@ export function Navigation({ className }: { className?: string }) {
               <span className="font-bold text-lg">TopoForge</span>
             </Link>
           )}
-          <Button variant="ghost" size="icon" onClick={toggleCollapse} className="h-6 w-6">
-            {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          <Button id="sidebar-toggle" variant="ghost" size="icon" onClick={toggleSidebar} className="h-6 w-6">
+            {isSidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           </Button>
         </div>
 
@@ -114,12 +134,12 @@ export function Navigation({ className }: { className?: string }) {
                 className={cn(
                   "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group relative",
                   isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground",
-                  isCollapsed && "justify-center px-2"
+                  isSidebarCollapsed && "justify-center px-2"
                 )}
-                title={isCollapsed ? item.label : undefined}
+                title={isSidebarCollapsed ? item.label : undefined}
               >
                 <item.icon className={cn("h-5 w-5", isActive && "animate-pulse")} />
-                {!isCollapsed && <span className="font-medium">{item.label}</span>}
+                {!isSidebarCollapsed && <span className="font-medium">{item.label}</span>}
                 {isActive && (
                   <motion.div
                     layoutId="activeTab"
@@ -133,7 +153,7 @@ export function Navigation({ className }: { className?: string }) {
 
         {/* Footer / User */}
         <div className="p-4 border-t border-border">
-          {!isCollapsed ? (
+          {!isSidebarCollapsed ? (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold">
@@ -161,7 +181,7 @@ export function Navigation({ className }: { className?: string }) {
       {/* Breadcrumbs (Desktop Top Bar) */}
       <div className={cn(
         "hidden md:flex fixed top-0 right-0 h-16 items-center justify-between px-8 border-b border-border/50 bg-background/80 backdrop-blur-xl z-30 transition-all duration-300",
-        isCollapsed ? "left-[80px]" : "left-[280px]"
+        isSidebarCollapsed ? "left-[80px]" : "left-[280px]"
       )}>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Link to="/" className="hover:text-foreground">Home</Link>

@@ -18,8 +18,12 @@ import {
   Check
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { useState } from "react";
 
 const Landing = () => {
+  const [isVideoOpen, setIsVideoOpen] = useState(false);
+
   const features = [
     {
       icon: Layers,
@@ -151,9 +155,24 @@ const Landing = () => {
                     <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
                 </Link>
-                <Button variant="hero-outline" size="xl">
-                  Watch Demo
-                </Button>
+
+                <Dialog open={isVideoOpen} onOpenChange={setIsVideoOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="hero-outline" size="xl">
+                      Watch Demo
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl bg-black/90 border-slate-800 p-0 overflow-hidden">
+                    <video
+                      controls
+                      autoPlay
+                      className="w-full h-full aspect-video"
+                      src="/WINTER-2026/assets/demo.mp4"
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+                  </DialogContent>
+                </Dialog>
               </div>
 
               {/* Stats */}

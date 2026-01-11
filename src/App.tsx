@@ -38,100 +38,106 @@ const PageLoader = () => (
   </div>
 );
 
+import { UIProvider } from "@/context/UIContext";
+
+// ... imports
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <WikipediaDataProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter basename="/WINTER-2026">
-          <CommandPalette />
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
-              <Route path="/" element={<Landing />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/verify-email" element={<VerifyEmail />} />
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <UserProfile />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/monitor"
-                element={
-                  <ProtectedRoute>
-                    <Monitor />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/sources"
-                element={
-                  <ProtectedRoute>
-                    <Sources />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/analytics"
-                element={
-                  <ProtectedRoute>
-                    <Analytics />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/settings"
-                element={
-                  <ProtectedRoute>
-                    <Settings />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/geography"
-                element={
-                  <ProtectedRoute>
-                    <Geography />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/visualizations"
-                element={
-                  <ProtectedRoute>
-                    <Visualizations />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/data-flow"
-                element={
-                  <ProtectedRoute>
-                    <DataFlowDiagram />
-                  </ProtectedRoute>
-                }
-              />
+      <UIProvider>
+        <WikipediaDataProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter basename="/WINTER-2026">
+            <CommandPalette />
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                <Route path="/" element={<Landing />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/verify-email" element={<VerifyEmail />} />
+                <Route
+                  path="/profile"
+                  element={
+                    <ProtectedRoute>
+                      <UserProfile />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/monitor"
+                  element={
+                    <ProtectedRoute>
+                      <Monitor />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/sources"
+                  element={
+                    <ProtectedRoute>
+                      <Sources />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/analytics"
+                  element={
+                    <ProtectedRoute>
+                      <Analytics />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/settings"
+                  element={
+                    <ProtectedRoute>
+                      <Settings />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/geography"
+                  element={
+                    <ProtectedRoute>
+                      <Geography />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/visualizations"
+                  element={
+                    <ProtectedRoute>
+                      <Visualizations />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/data-flow"
+                  element={
+                    <ProtectedRoute>
+                      <DataFlowDiagram />
+                    </ProtectedRoute>
+                  }
+                />
 
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
-      </WikipediaDataProvider>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </WikipediaDataProvider>
+      </UIProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

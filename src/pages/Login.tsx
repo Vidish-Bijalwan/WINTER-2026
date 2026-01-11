@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { login, bypassLogin } from "@/lib/auth";
+import { login } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -196,44 +196,6 @@ export default function Login() {
                                 Create an Account
                             </Button>
                         </Link>
-
-                        <div className="relative">
-                            <div className="absolute inset-0 flex items-center">
-                                <div className="w-full border-t border-slate-700"></div>
-                            </div>
-                            <div className="relative flex justify-center text-xs uppercase">
-                                <span className="bg-slate-900/80 px-2 text-slate-400">Development</span>
-                            </div>
-                        </div>
-
-                        <Button
-                            variant="ghost"
-                            className="w-full text-amber-500 hover:text-amber-400 hover:bg-amber-500/10"
-                            onClick={async () => {
-                                setIsLoading(true);
-                                try {
-                                    const result = await bypassLogin();
-                                    if (result.success) {
-                                        toast({
-                                            title: "Bypass Successful",
-                                            description: "Logged in as bypass user",
-                                        });
-                                        navigate("/dashboard");
-                                    } else {
-                                        toast({
-                                            title: "Bypass Failed",
-                                            description: result.error,
-                                            variant: "destructive",
-                                        });
-                                    }
-                                } finally {
-                                    setIsLoading(false);
-                                }
-                            }}
-                            disabled={isLoading}
-                        >
-                            Bypass Login (Dev Only)
-                        </Button>
                     </CardContent>
                 </Card>
 

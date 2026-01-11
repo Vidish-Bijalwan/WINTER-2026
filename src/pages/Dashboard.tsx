@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy } from '@dnd-kit/sortable';
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Navigation from "@/components/Navigation";
 import LiveEventFeed from "@/components/LiveEventFeed";
@@ -19,6 +19,8 @@ import { TDAStats } from "@/components/TDAStats";
 import { PersistenceBarcode } from "@/components/tda-viz/PersistenceBarcode";
 import { BirthDeathPlane } from "@/components/tda-viz/BirthDeathPlane";
 import { FiltrationAnimation } from "@/components/tda-viz/FiltrationAnimation";
+import { PersistenceLandscape } from "@/components/tda-viz/PersistenceLandscape";
+import { AnomalyScoreCard } from "@/components/AnomalyScoreCard";
 import { useWikipediaData } from "@/context/WikipediaDataContext";
 
 // Wrapper components to provide data
@@ -37,11 +39,16 @@ const FiltrationAnimationWrapper = () => {
   return <FiltrationAnimation data={persistenceDiagram} />;
 };
 
+import { useUI } from "@/context/UIContext";
+
+// ... imports
+
 export default function Dashboard() {
-  const [items, setItems] = useState(['feed', 'timeline', 'threats', 'topology']);
+  const [items, setItems] = useState(['anomaly-score', 'landscape', 'feed', 'timeline', 'threats', 'topology']);
   const [isAddWidgetOpen, setIsAddWidgetOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { isSidebarCollapsed } = useUI();
 
   useEffect(() => {
     // Simulate initial data load
@@ -101,23 +108,41 @@ export default function Dashboard() {
       case 'barcode': return <PersistenceBarcodeWrapper />;
       case 'birth-death': return <BirthDeathPlaneWrapper />;
       case 'filtration': return <FiltrationAnimationWrapper />;
+      case 'landscape': return <PersistenceLandscape />;
+      case 'anomaly-score': return <AnomalyScoreCard />;
       default: return null;
     }
+  };
+
+  const handleExport = () => {
+    window.open('http://localhost:8000/api/anomalies/export?format=csv', '_blank');
+    toast({
+      title: "Export Started",
+      description: "Downloading anomaly data as CSV...",
+    });
   };
 
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
 
-      <main className="pt-20 pb-8 px-4 sm:px-6 lg:px-8 max-w-[1800px] mx-auto transition-all duration-300 md:pl-[280px]">
+      <main className={cn(
+        "pt-20 pb-8 px-4 sm:px-6 lg:px-8 max-w-[1800px] mx-auto transition-all duration-300",
+        isSidebarCollapsed ? "md:pl-[80px]" : "md:pl-[280px]"
+      )}>
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-2xl font-bold">Dashboard</h1>
             <p className="text-muted-foreground text-sm mt-1">Real-time monitoring and anomaly detection.</p>
           </div>
-          <Button size="sm" onClick={() => setIsAddWidgetOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" /> Add Widget
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleExport}>
+              <Download className="w-4 h-4 mr-2" /> Export Data
+            </Button>
+            <Button size="sm" onClick={() => setIsAddWidgetOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" /> Add Widget
+            </Button>
+          </div>
         </div>
 
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>

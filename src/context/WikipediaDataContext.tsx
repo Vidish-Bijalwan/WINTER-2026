@@ -59,6 +59,9 @@ interface WikipediaDataContextValue {
   dataSources: DataSourceStatus[];
   pipelineStages: PipelineStage[];
 
+  // Analysis Result
+  analysisResult: any | null;
+
   // Actions
   connect: () => void;
   disconnect: () => void;
@@ -297,6 +300,7 @@ export function WikipediaDataProvider({ children }: { children: React.ReactNode 
     riskHeatmap,
     dataSources,
     pipelineStages,
+    analysisResult: lastAnalysis,
     connect: stream.connect,
     disconnect: stream.disconnect,
     clearAnomalies,
