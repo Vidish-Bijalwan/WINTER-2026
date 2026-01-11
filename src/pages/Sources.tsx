@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { API_BASE_URL } from "@/lib/api";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -70,7 +71,7 @@ const Sources = () => {
 
   const fetchSources = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/sources/');
+      const response = await fetch(`${API_BASE_URL}/api/sources/`);
       if (response.ok) {
         const data = await response.json();
         const dbSources = data.map((s: any) => ({
@@ -96,7 +97,7 @@ const Sources = () => {
 
   const handleAddSource = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/sources/', {
+      const response = await fetch(`${API_BASE_URL}/api/sources/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newSource)
@@ -118,7 +119,7 @@ const Sources = () => {
   const handleDeleteSource = async (id: string) => {
     if (id === 'wikipedia') return; // Protect system source
     try {
-      const response = await fetch(`http://localhost:8000/api/sources/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/sources/${id}`, {
         method: 'DELETE'
       });
       if (response.ok) {
