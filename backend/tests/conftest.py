@@ -11,6 +11,33 @@ from unittest.mock import MagicMock, AsyncMock
 # Since Motor is async and Mongomock is sync, we need to mock async calls
 # This is a simplified mock. For complex queries, specialized libraries are better.
 
+class AsyncMockCursor:
+    def __init__(self, cursor):
+        self.cursor = cursor
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        try:
+            return next(self.cursor)
+        except StopIteration:
+            raise StopAsyncIteration
+
+    def __getattr__(self, name):
+        # Delegate other methods (sort, skip, limit) to the underlying cursor
+        # and return self to support chaining
+        attr = getattr(self.cursor, name)
+        if callable(attr):
+            def wrapper(*args, **kwargs):
+                 attr(*args, **kwargs)
+                 return self
+            return wrapper
+        return attr
+
+    async def to_list(self, length=None):
+        return list(self.cursor)
+
 class AsyncMockCollection:
     def __init__(self, collection):
         self.collection = collection
@@ -29,11 +56,7 @@ class AsyncMockCollection:
         
     def find(self, *args, **kwargs):
         cursor = self.collection.find(*args, **kwargs)
-        # Wrap cursor to be async-iterable
-        async def async_gen():
-            for doc in cursor:
-                yield doc
-        return async_gen()
+        return AsyncMockCursor(cursor)
         
     async def count_documents(self, *args, **kwargs):
         return self.collection.count_documents(*args, **kwargs)
