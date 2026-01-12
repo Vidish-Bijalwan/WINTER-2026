@@ -176,6 +176,232 @@ graph TB
 
 ---
 
+## Level 2 DFD - Authentication Flow
+
+```mermaid
+graph TB
+    subgraph "Client Layer"
+        LoginForm[Login Form<br/>React Component]
+        AuthContext[Auth Context<br/>React Context]
+        LocalStorage[Browser<br/>LocalStorage]
+    end
+    
+    subgraph "API Gateway"
+        AuthMiddleware[Auth Middleware<br/>JWT Validator]
+        RateLimiter[Rate Limiter<br/>5 req/min]
+    end
+    
+    subgraph "Backend Services"
+        AuthRoute[Auth Route<br/>/api/auth/login]
+        JWTHandler[JWT Handler<br/>Token Generator]
+        PasswordUtils[Password Utils<br/>Bcrypt Verify]
+    end
+    
+    subgraph "Database"
+        UsersDB[(Users Collection)]
+        SessionsDB[(Sessions Collection)]
+    end
+    
+    %% Login Flow
+    LoginForm -->|Credentials| RateLimiter
+    RateLimiter -->|Rate OK| AuthRoute
+    AuthRoute -->|Hash Check| PasswordUtils
+    PasswordUtils -->|Query User| UsersDB
+    UsersDB -->|User Data| PasswordUtils
+    PasswordUtils -->|Verified| JWTHandler
+    JWTHandler -->|Create Session| SessionsDB
+    JWTHandler -->|Access Token| AuthRoute
+    AuthRoute -->|JWT + User Info| AuthContext
+    AuthContext -->|Store Token| LocalStorage
+    
+    %% Protected Route Flow
+    AuthContext -->|JWT in Header| AuthMiddleware
+    AuthMiddleware -->|Validate| JWTHandler
+    JWTHandler -->|Verify Signature| AuthMiddleware
+    AuthMiddleware -->|Authorized| ProtectedAPI[Protected API Routes]
+```
+
+**Authentication Process Details:**
+1. **Login Request**: User submits credentials via React form
+2. **Rate Limiting**: Middleware checks request rate (5 attempts/min)
+3. **Password Verification**: Bcrypt compares hashed passwords
+4. **JWT Generation**: Creates access token (24h expiry) and refresh token (7d expiry)
+5. **Session Storage**: Stores session in MongoDB with TTL index
+6. **Token Storage**: Client stores JWT in localStorage
+7. **Authorization**: Middleware validates JWT on protected routes
+
+---
+
+## Level 2 DFD - Real-time Data Streaming Flow
+
+```mermaid
+graph TB
+    subgraph "External Data Sources"
+        WikiSSE[Wikipedia<br/>EventStreams SSE]
+        TwitterAPI[Twitter/X API<br/>Mock Data]
+    end
+    
+    subgraph "Frontend Stream Processing"
+        SSEClient[SSE Client<br/>EventSource]
+        StreamParser[Stream Parser<br/>JSON Decoder]
+        EventValidator[Event Validator<br/>Schema Check]
+    end
+    
+    subgraph "Data Processing Pipeline"
+        RingBuffer[Ring Buffer<br/>Max 2000 Events]
+        WindowManager[Sliding Window<br/>2-second batches]
+        TDAWorker[Web Worker<br/>TDA Computation]
+    end
+    
+    subgraph "Feature Extraction"
+        GraphBuilder[Graph Builder<br/>Adjacency Matrix]
+        Filtration[Vietoris-Rips<br/>Filtration]
+        PersistenceCalc[Persistence<br/>Calculator]
+    end
+    
+    subgraph "Anomaly Detection"
+        BaselineCache[(Baseline Models<br/>Last 50 Windows)]
+        WassersteinCalc[Wasserstein<br/>Distance]
+        LandscapeCalc[Persistence<br/>Landscape]
+        AnomalyScorer[Multi-Modal<br/>Scorer]
+    end
+    
+    subgraph "UI Update"
+        StateManager[React State<br/>Context API]
+        VisualizationLayer[Visualization<br/>Components]
+        AlertSystem[Alert System<br/>Toast Notifications]
+    end
+    
+    %% Data Flow
+    WikiSSE -->|SSE Stream| SSEClient
+    SSEClient -->|Raw Events| StreamParser
+    StreamParser -->|Parsed JSON| EventValidator
+    EventValidator -->|Valid Events| RingBuffer
+    
+    RingBuffer -->|Event Batch| WindowManager
+    WindowManager -->|Window Data| TDAWorker
+    
+    TDAWorker -->|Event Array| GraphBuilder
+    GraphBuilder -->|Graph Matrix| Filtration
+    Filtration -->|Simplicial Complex| PersistenceCalc
+    
+    PersistenceCalc -->|Persistence Diagram| WassersteinCalc
+    PersistenceCalc -->|Persistence Diagram| LandscapeCalc
+    PersistenceCalc -->|Store| BaselineCache
+    BaselineCache -->|Historical Data| WassersteinCalc
+    BaselineCache -->|Historical Data| LandscapeCalc
+    
+    WassersteinCalc -->|Distance Score| AnomalyScorer
+    LandscapeCalc -->|Landscape Norm| AnomalyScorer
+    AnomalyScorer -->|Anomaly Result| StateManager
+    
+    StateManager -->|Update Charts| VisualizationLayer
+    StateManager -->|Trigger Alerts| AlertSystem
+    PersistenceCalc -->|Diagram Data| VisualizationLayer
+```
+
+**Real-time Processing Metrics:**
+- **Stream Rate**: 5-10 events/second (Wikipedia)
+- **Buffer Capacity**: 2000 events (FIFO)
+- **Processing Window**: 2 seconds (1000ms batches)
+- **TDA Computation**: ~200ms for 2000 events
+- **Anomaly Detection**: ~50ms per window
+- **UI Update Frequency**: 2 seconds
+
+---
+
+## Level 2 DFD - API Request/Response Flow
+
+```mermaid
+graph TB
+    subgraph "Client Application"
+        ReactApp[React Application]
+        APIClient[Fetch/Axios Client]
+        ErrorHandler[Error<br/>Handler]
+    end
+    
+    subgraph "Backend API Layer"
+        CORSMiddleware[CORS<br/>Middleware]
+        AuthMW[Auth<br/>Middleware]
+        RateLimitMW[Rate Limit<br/>Middleware]
+        Router[FastAPI<br/>Router]
+    end
+    
+    subgraph "Business Logic"
+        UserRoute[User Routes<br/>/api/users]
+        AnomalyRoute[Anomaly Routes<br/>/api/anomalies]
+        SourceRoute[Source Routes<br/>/api/sources]
+    end
+    
+    subgraph "Data Access Layer"
+        UserModel[User Model<br/>CRUD Operations]
+        AnomalyModel[Anomaly Model<br/>CRUD Operations]
+        SourceModel[Source Model<br/>CRUD Operations]
+    end
+    
+    subgraph "Database"
+        MongoDB[(MongoDB Atlas<br/>Database)]
+    end
+    
+    subgraph "Response Pipeline"
+        Serializer[Pydantic<br/>Serializer]
+        ResponseBuilder[JSON Response<br/>Builder]
+    end
+    
+    %% Request Flow
+    ReactApp -->|HTTP Request| APIClient
+    APIClient -->|AJAX Call| CORSMiddleware
+    CORSMiddleware -->|CORS OK| AuthMW
+    AuthMW -->|JWT Valid| RateLimitMW
+    RateLimitMW -->|Rate OK| Router
+    
+    Router -->|Route Match| UserRoute
+    Router -->|Route Match| AnomalyRoute
+    Router -->|Route Match| SourceRoute
+    
+    UserRoute -->|Query| UserModel
+    AnomalyRoute -->|Query| AnomalyModel
+    SourceRoute -->|Query| SourceModel
+    
+    UserModel -->|CRUD| MongoDB
+    AnomalyModel -->|CRUD| MongoDB
+    SourceModel -->|CRUD| MongoDB
+    
+    %% Response Flow
+    MongoDB -->|Documents| UserModel
+    MongoDB -->|Documents| AnomalyModel
+    MongoDB -->|Documents| SourceModel
+    
+    UserModel -->|Python Dict| Serializer
+    AnomalyModel -->|Python Dict| Serializer
+    SourceModel -->|Python Dict| Serializer
+    
+    Serializer -->|Validated Data| ResponseBuilder
+    ResponseBuilder -->|JSON Response| APIClient
+    APIClient -->|Data/Error| ReactApp
+    
+    %% Error Handling
+    AuthMW -->|401 Unauthorized| ErrorHandler
+    RateLimitMW -->|429 Too Many Requests| ErrorHandler
+    MongoDB -->|Error| ErrorHandler
+    ErrorHandler -->|Error Response| ReactApp
+```
+
+**API Endpoints:**
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| POST | `/api/auth/login` | User login | No |
+| POST | `/api/auth/register` | User registration | No |
+| GET | `/api/users/me` | Get current user | Yes |
+| GET | `/api/anomalies` | List all anomalies | Yes |
+| POST | `/api/anomalies` | Create anomaly log | Yes |
+| GET | `/api/sources` | List data sources | Yes |
+| POST | `/api/sources` | Add data source | Yes |
+| DELETE | `/api/sources/{id}` | Remove data source | Yes |
+
+---
+
 ## Process Specifications
 
 ### Process 1: Compute Persistence Diagram

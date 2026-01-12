@@ -105,32 +105,24 @@ Visit `http://localhost:5173` to view the dashboard.
 
 ## 🏗 System Architecture
 
-```mermaid
-graph TD
-    subgraph "Data Sources"
-        WP[Wikipedia SSE]
-        TW[Twitter/X API]
-    end
+![TopoShape System Architecture](docs/SCREENSHOTS/system_architecture.png)
 
-    subgraph "Processing Layer"
-        Norm[Normalization]
-        Buffer[Event Buffer]
-        TDA[TDA Engine]
-    end
+### Architecture Overview
 
-    subgraph "Visualization"
-        Dash[React Dashboard]
-        Net3D[3D Network]
-        Persist[Persistence Barcodes]
-    end
+TopoShape Insights follows a modern, layered architecture:
 
-    WP --> Norm
-    Norm --> Buffer
-    Buffer --> TDA
-    TDA --> Net3D
-    TDA --> Persist
-    TDA --> Dash
-```
+- **Data Sources Layer**: Wikipedia SSE and Twitter/X API for real-time event streams
+- **Processing Layer**: Normalization, Event Buffer, and TDA Engine for topological analysis
+- **Visualization Layer**: React Dashboard, 3D Network visualization, and Persistence Barcodes
+- **Backend Services**: FastAPI REST API with MongoDB Atlas database
+
+### Detailed Documentation
+
+For comprehensive architecture details, see:
+- 📊 [Data Flow Diagrams](docs/DATA_FLOW_DIAGRAMS.md) - Complete DFDs at all levels
+- 🗄️ [Database Schema](docs/DATABASE_SCHEMA.md) - ER diagrams and collection details
+- 🔌 [Backend API Documentation](backend/README.md) - API endpoints and integration guide
+- 🏛️ [System Architecture](ARCHITECTURE.md) - In-depth architecture documentation
 
 ## 📚 Documentation
 
