@@ -1,9 +1,7 @@
 /**
- * Authentication system using backend API with JWT tokens
- * Modern authentication with MongoDB Atlas backend
+ * Client-side authentication system using localStorage
+ * No backend required - works on GitHub Pages
  */
-
-import { authApi, ApiError } from './api';
 
 interface User {
     id: string;
@@ -12,17 +10,40 @@ interface User {
     full_name?: string;
     organization?: string;
     role: 'admin' | 'viewer';
+    password: string; // Stored hashed in localStorage
 }
 
 interface Session {
-    user: User;
+    user: Omit<User, 'password'>;
     token: string;
     expiresAt: number;
 }
 
 const SESSION_KEY = 'tda_session';
-const TOKEN_KEY = 'auth_token';
+const USERS_KEY = 'tda_users';
 const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+
+// Simple hash function (not cryptographically secure, but fine for client-side demo)
+function simpleHash(str: string): string {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+    }
+    return hash.toString(36);
+}
+
+// Get all users from localStorage
+function getUsers(): User[] {
+    const users = localStorage.getItem(USERS_KEY);
+    return users ? JSON.parse(users) : [];
+}
+
+// Save users to localStorage
+function saveUsers(users: User[]): void {
+    localStorage.setItem(USERS_KEY, JSON.stringify(users));
+}
 
 /**
  * Login with username/email and password
@@ -32,18 +53,30 @@ export async function login(
     password: string
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const response = await authApi.login({ username, password });
+        const users = getUsers();
+        const hashedPassword = simpleHash(password);
 
-        // Store token
-        localStorage.setItem(TOKEN_KEY, response.access_token);
+        // Find user by username or email
+        const user = users.find(u =>
+            (u.username === username || u.email === username) &&
+            u.password === hashedPassword
+        );
+
+        if (!user) {
+            return { success: false, error: 'Invalid credentials' };
+        }
 
         // Create session
         const session: Session = {
             user: {
-                ...response.user,
-                role: response.user.role as 'admin' | 'viewer',
+                id: user.id,
+                username: user.username,
+                email: user.email,
+                full_name: user.full_name,
+                organization: user.organization,
+                role: user.role,
             },
-            token: response.access_token,
+            token: simpleHash(user.id + Date.now().toString()),
             expiresAt: Date.now() + SESSION_DURATION,
         };
 
@@ -52,42 +85,7 @@ export async function login(
 
         return { success: true };
     } catch (error) {
-        if (error instanceof ApiError) {
-            return { success: false, error: error.message };
-        }
         return { success: false, error: 'Login failed. Please try again.' };
-    }
-}
-
-/**
- * Bypass login for development
- */
-export async function bypassLogin(): Promise<{ success: boolean; error?: string }> {
-    try {
-        const response = await authApi.bypassLogin();
-
-        // Store token
-        localStorage.setItem(TOKEN_KEY, response.access_token);
-
-        // Create session
-        const session: Session = {
-            user: {
-                ...response.user,
-                role: response.user.role as 'admin' | 'viewer',
-            },
-            token: response.access_token,
-            expiresAt: Date.now() + SESSION_DURATION,
-        };
-
-        localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-        sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
-
-        return { success: true };
-    } catch (error) {
-        if (error instanceof ApiError) {
-            return { success: false, error: error.message };
-        }
-        return { success: false, error: 'Bypass login failed.' };
     }
 }
 
@@ -102,18 +100,43 @@ export async function register(data: {
     organization?: string;
 }): Promise<{ success: boolean; error?: string }> {
     try {
-        const response = await authApi.register(data);
+        const users = getUsers();
 
-        // Store token
-        localStorage.setItem(TOKEN_KEY, response.access_token);
+        // Check if email already exists
+        if (users.some(u => u.email === data.email)) {
+            return { success: false, error: 'Email already registered' };
+        }
 
-        // Create session
+        // Check if username already exists
+        if (users.some(u => u.username === data.username)) {
+            return { success: false, error: 'Username already taken' };
+        }
+
+        // Create new user
+        const newUser: User = {
+            id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+            username: data.username,
+            email: data.email,
+            full_name: data.full_name,
+            organization: data.organization,
+            role: 'viewer',
+            password: simpleHash(data.password),
+        };
+
+        users.push(newUser);
+        saveUsers(users);
+
+        // Auto-login after registration
         const session: Session = {
             user: {
-                ...response.user,
-                role: response.user.role as 'admin' | 'viewer',
+                id: newUser.id,
+                username: newUser.username,
+                email: newUser.email,
+                full_name: newUser.full_name,
+                organization: newUser.organization,
+                role: newUser.role,
             },
-            token: response.access_token,
+            token: simpleHash(newUser.id + Date.now().toString()),
             expiresAt: Date.now() + SESSION_DURATION,
         };
 
@@ -122,9 +145,6 @@ export async function register(data: {
 
         return { success: true };
     } catch (error) {
-        if (error instanceof ApiError) {
-            return { success: false, error: error.message };
-        }
         return { success: false, error: 'Registration failed. Please try again.' };
     }
 }
@@ -134,7 +154,6 @@ export async function register(data: {
  */
 export function logout() {
     localStorage.removeItem(SESSION_KEY);
-    localStorage.removeItem(TOKEN_KEY);
     sessionStorage.removeItem(SESSION_KEY);
 }
 
@@ -151,12 +170,6 @@ export function isAuthenticated(): boolean {
 
         // Check if session is expired
         if (session.expiresAt < Date.now()) {
-            logout();
-            return false;
-        }
-
-        // Check if token exists
-        if (!session.token) {
             logout();
             return false;
         }
@@ -193,17 +206,9 @@ export function getCurrentSession(): Session | null {
 /**
  * Get current user
  */
-export function getCurrentUser(): User | null {
+export function getCurrentUser(): Omit<User, 'password'> | null {
     const session = getCurrentSession();
     return session ? session.user : null;
-}
-
-/**
- * Get auth token
- */
-export function getAuthToken(): string | null {
-    const token = localStorage.getItem(TOKEN_KEY);
-    return token;
 }
 
 /**
