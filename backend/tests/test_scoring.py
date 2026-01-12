@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
-from backend.core.tda import TopologyAnalyzer
-from backend.core.processor import DataProcessor
+from core.tda import TopologyAnalyzer
+from core.processor import DataProcessor
 from unittest.mock import MagicMock, patch
 
 class TestAnomalyScoring:
@@ -28,10 +28,10 @@ class TestAnomalyScoring:
     @pytest.mark.asyncio
     async def test_processor_scoring(self):
         # Mock dependencies
-        with patch('backend.core.processor.TopologyAnalyzer') as MockTDA, \
-             patch('backend.core.processor.AnomalyDetector') as MockML, \
-             patch('backend.core.processor.ThreatClassifier') as MockSecurity, \
-             patch('backend.core.processor.AnomalyLogModel') as MockLog:
+        with patch('core.processor.TopologyAnalyzer') as MockTDA, \
+             patch('core.processor.AnomalyDetector') as MockML, \
+             patch('core.processor.ThreatClassifier') as MockSecurity, \
+             patch('core.processor.AnomalyLogModel') as MockLog:
             
             # Setup mocks
             mock_tda = MockTDA.return_value
