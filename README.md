@@ -1,17 +1,17 @@
-# TopoShape Insights (TopoForge)
+# TopoShape Insights (TopoForge) 🚀
 
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Version](https://img.shields.io/badge/version-1.0.0-orange)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
-![React](https://img.shields.io/badge/React-18.0-61dafb)
-![Python](https://img.shields.io/badge/Python-3.10-yellow)
-
-![DASHBOARD](docs/SCREENSHOTS/DASHBOARD.png)
+[![Status](https://img.shields.io/badge/status-active-success.svg)](https://github.com/Vidish-Bijalwan/WINTER-2026)
 
 > **Real-time Anomaly Detection Platform using Topological Data Analysis (TDA)**
 
 ---
+
+## 🏗️ Architecture & Schema
+
+For a deep dive into the technical architecture, component hierarchy, and data flow, please refer to our **[Project Schema](SCHEMA.md)**.
 
 ## 📋 Table of Contents
 
@@ -51,8 +51,10 @@ Traditional tools miss "quiet" attacks that have low volume but high structural 
 ### Frontend
 - **Framework**: React 18, Vite
 - **Language**: TypeScript
-- **Styling**: Tailwind CSS, Shadcn/UI
-- **Visualization**: Three.js (@react-three/fiber), Recharts, D3.js
+- **State**: Zustand
+- **3D Engine**: Three.js (@react-three/fiber)
+- **Visualization**: Recharts, D3.js
+- **PWA**: Vite PWA Plugin
 
 ### Backend
 - **API**: Python (FastAPI)
@@ -123,12 +125,24 @@ For comprehensive architecture details, see:
 - 🗄️ [Database Schema](docs/DATABASE_SCHEMA.md) - ER diagrams and collection details
 - 🔌 [Backend API Documentation](backend/README.md) - API endpoints and integration guide
 - 🏛️ [System Architecture](ARCHITECTURE.md) - In-depth architecture documentation
+- 🏗️ **[Project Schema](SCHEMA.md)** - Visual component hierarchy and data flow
 
 ## 📚 Documentation
 
 - [API Documentation](docs/API.md)
 - [Deployment Guide](docs/DEPLOYMENT.md)
 - [Screenshots & Demos](docs/SCREENSHOTS.md)
+
+## 📂 Project Structure
+
+```text
+src/
+├── components/       # UI Components (Charts, Layout, Visuals)
+├── contexts/         # React Contexts (Theming)
+├── hooks/            # Custom React Hooks & State (Zustand)
+├── pages/            # Application Routing Pages
+└── utils/            # Helper functions & Data processing
+```
 
 ## 🤝 Contributing
 
@@ -138,6 +152,6 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🛡 Security
+---
 
-For security concerns, please refer to our [Security Policy](SECURITY.md).
+© 2026 Vidish Bijalwan - TopoForge Project
