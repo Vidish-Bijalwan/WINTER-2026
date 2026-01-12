@@ -6,7 +6,7 @@ import logging
 from .tda import TopologyAnalyzer
 from .ml import AnomalyDetector
 from .security import ThreatClassifier
-from ..database.models import AnomalyLogModel
+from database.models import AnomalyLogModel
 from datetime import datetime
 
 logger = logging.getLogger("topoforge.processor")

@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from backend.core.tda import TopologyAnalyzer
+from core.tda import TopologyAnalyzer
 
 class TestPersistenceLandscape:
     

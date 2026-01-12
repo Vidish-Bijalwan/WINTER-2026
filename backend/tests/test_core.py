@@ -58,7 +58,8 @@ def test_security_classification():
     assert result_low['risk_level'] == 'Low'
 
 # --- Processor Integration Test ---
-def test_processor_flow():
+@pytest.mark.asyncio
+async def test_processor_flow():
     processor = DataProcessor(window_size=20)
     
     # Ingest enough data to calibrate
@@ -68,7 +69,7 @@ def test_processor_flow():
     assert processor.is_calibrated
     
     # Process a window
-    result = processor.process_window()
+    result = await processor.process_window()
     assert "betti_numbers" in result
     assert "security_analysis" in result
     assert result['security_analysis']['risk_level'] in ['Low', 'Medium', 'High', 'Critical']
