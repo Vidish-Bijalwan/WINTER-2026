@@ -24,6 +24,9 @@ import {
 import { useMemo, useState, useEffect } from "react";
 import { generateKasperskyThreat, generateBitdefenderThreat, generateAnyRunSandbox, ThreatEvent } from "@/lib/dataSources";
 
+import { useDataSource } from "@/context/DataSourceContext";
+import { STATIC_SOURCES_DATA } from "@/lib/sourcesData";
+
 const Analytics = () => {
   const {
     totalEventsProcessed,
@@ -32,6 +35,7 @@ const Analytics = () => {
     bettiNumbers,
     isConnected
   } = useWikipediaData();
+  const { activeSourceIds, sourceStats } = useDataSource();
 
   const [threatFeeds, setThreatFeeds] = useState<ThreatEvent[]>([]);
 
@@ -54,19 +58,26 @@ const Analytics = () => {
   }, []);
 
   const stats = useMemo(() => {
+    let simulatedTotal = 0;
+    let simulatedEps = 0;
+    Object.values(sourceStats).forEach(s => {
+      simulatedTotal += s.total;
+      simulatedEps += s.eps;
+    });
+
     const criticalCount = anomalies.filter(a => a.severity === 'critical').length;
     const warningCount = anomalies.filter(a => a.severity === 'warning').length;
 
     return {
-      totalEvents: totalEventsProcessed,
-      eventsPerSecond,
+      totalEvents: totalEventsProcessed + simulatedTotal,
+      eventsPerSecond: eventsPerSecond + simulatedEps,
       criticalAnomalies: criticalCount,
       warningAnomalies: warningCount,
       totalAnomalies: anomalies.length,
       avgBetti: Math.round((bettiNumbers.h0 + bettiNumbers.h1 + bettiNumbers.h2) / 3),
       threatScore: Math.floor(50 + Math.random() * 30), // Mock threat score
     };
-  }, [totalEventsProcessed, eventsPerSecond, anomalies, bettiNumbers]);
+  }, [totalEventsProcessed, eventsPerSecond, anomalies, bettiNumbers, sourceStats]);
 
   const analyticsCards = [
     {
@@ -81,8 +92,8 @@ const Analytics = () => {
     {
       title: "Current Throughput",
       value: `${stats.eventsPerSecond}/s`,
-      change: isConnected ? "Live" : "Paused",
-      trend: isConnected ? "up" : "stable",
+      change: (isConnected || activeSourceIds.size > 0) ? "Live" : "Paused",
+      trend: (isConnected || activeSourceIds.size > 0) ? "up" : "stable",
       icon: Activity,
       color: "text-success",
       bgColor: "bg-success/10",
@@ -368,20 +379,17 @@ const Analytics = () => {
                       {isConnected ? "Live" : "Off"}
                     </Badge>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Kaspersky</span>
-                    <Badge variant="success">Live</Badge>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Bitdefender</span>
-                    <Badge variant="success">Live</Badge>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">ANY.RUN</span>
-                    <Badge variant="success">Live</Badge>
-                  </div>
+                  {Array.from(activeSourceIds).slice(0, 4).map(id => {
+                    const source = STATIC_SOURCES_DATA.find(s => s.id === id);
+                    return (
+                      <div key={id} className="flex justify-between">
+                        <span className="text-muted-foreground truncate max-w-[120px]">{source?.name || id}</span>
+                        <Badge variant="success">Live</Badge>
+                      </div>
+                    );
+                  })}
                   <div className="text-xs text-muted-foreground pt-2 border-t">
-                    Total: 4 active streams
+                    Total: {activeSourceIds.size + (isConnected ? 1 : 0)} active streams
                   </div>
                 </div>
               </CardContent>

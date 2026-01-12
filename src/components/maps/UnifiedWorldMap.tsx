@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Activity, Flame, Share2 } from "lucide-react";
+import { useDataSource } from "@/context/DataSourceContext";
 
 interface EditMarker {
     id: string;
@@ -29,8 +30,11 @@ interface Arc {
     color: string;
 }
 
+
+
 export default function UnifiedWorldMap({ className }: { className?: string }) {
     const { events } = useWikipediaData();
+    const { recentEvents } = useDataSource();
     const [markers, setMarkers] = useState<EditMarker[]>([]);
     const [heatPoints, setHeatPoints] = useState<HeatPoint[]>([]);
     const [arcs, setArcs] = useState<Arc[]>([]);
@@ -41,8 +45,8 @@ export default function UnifiedWorldMap({ className }: { className?: string }) {
     const [showArcs, setShowArcs] = useState(true);
 
     useEffect(() => {
-        // Process Events for Markers
-        const newMarkers = events
+        // Process Real Events
+        const realMarkers = events
             .slice(0, 100)
             .map((event) => {
                 const geo = extractGeoLocation(event);
@@ -56,21 +60,42 @@ export default function UnifiedWorldMap({ className }: { className?: string }) {
                 };
             })
             .filter((m): m is EditMarker => m !== null);
-        setMarkers(newMarkers);
+
+        // Process Simulated Events
+        const simulatedMarkers = recentEvents
+            .slice(0, 50)
+            .map((e) => {
+                // Generate random geo for simulation
+                const lat = (Math.random() * 140) - 70; // Avoid poles
+                const lng = (Math.random() * 360) - 180;
+                return {
+                    id: e.id,
+                    position: [lat, lng] as [number, number],
+                    event: {
+                        title: e.content,
+                        user: e.source,
+                        bot: true,
+                        timestamp: new Date(e.timestamp)
+                    } as any,
+                    geo: { lat, lng, country: 'Simulated', countryCode: 'XX' },
+                    timestamp: new Date(e.timestamp).getTime(),
+                };
+            });
+
+        const allMarkers = [...realMarkers, ...simulatedMarkers];
+        setMarkers(allMarkers);
 
         // Process Events for Heatmap
         const locationCounts = new Map<string, { lat: number; lng: number; count: number }>();
-        events.forEach((event) => {
-            const geo = extractGeoLocation(event);
-            if (!geo) return;
-            const gridKey = `${Math.round(geo.lat)},${Math.round(geo.lng)}`;
+        allMarkers.forEach((marker) => {
+            const gridKey = `${Math.round(marker.geo.lat)},${Math.round(marker.geo.lng)}`;
             const existing = locationCounts.get(gridKey);
             if (existing) {
                 existing.count++;
             } else {
                 locationCounts.set(gridKey, {
-                    lat: Math.round(geo.lat),
-                    lng: Math.round(geo.lng),
+                    lat: Math.round(marker.geo.lat),
+                    lng: Math.round(marker.geo.lng),
                     count: 1,
                 });
             }
@@ -82,8 +107,9 @@ export default function UnifiedWorldMap({ className }: { className?: string }) {
         }));
         setHeatPoints(points);
 
-        // Process Events for Arcs
+        // Process Events for Arcs (Simulate arcs for simulated events too)
         const newArcs: Arc[] = [];
+        // Real arcs
         for (let i = 0; i < Math.min(events.length - 1, 50); i++) {
             const start = extractGeoLocation(events[i]);
             const end = extractGeoLocation(events[i + 1]);
@@ -96,9 +122,23 @@ export default function UnifiedWorldMap({ className }: { className?: string }) {
                 });
             }
         }
+        // Simulated arcs (random connections)
+        if (simulatedMarkers.length > 1) {
+            for (let i = 0; i < Math.min(simulatedMarkers.length - 1, 20); i++) {
+                const start = simulatedMarkers[i].geo;
+                const end = simulatedMarkers[i + 1].geo;
+                const path = calculateArcPath(start, end, 30);
+                newArcs.push({
+                    id: `sim-${i}`,
+                    path,
+                    color: '#f472b6', // Pink for simulated
+                });
+            }
+        }
+
         setArcs(newArcs);
 
-    }, [events]);
+    }, [events, recentEvents]);
 
     const maxIntensity = Math.max(...heatPoints.map((p) => p.intensity), 1);
 
