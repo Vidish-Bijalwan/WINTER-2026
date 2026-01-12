@@ -6,6 +6,7 @@ import { WikipediaEvent } from "@/hooks/useWikipediaStream";
 import { Bot, User, FileEdit, FilePlus, Tag, ArrowUpDown } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { ScrollArea } from "./ui/scroll-area";
+import { useDataSource } from "@/context/DataSourceContext";
 
 interface LiveEventFeedProps {
   className?: string;
@@ -106,17 +107,41 @@ const EventItem = React.forwardRef<HTMLDivElement, { event: WikipediaEvent; inde
 
 export function LiveEventFeed({ className, maxItems = 15 }: LiveEventFeedProps) {
   const { events, isConnected, eventsPerSecond } = useWikipediaData();
+  const { recentEvents: simulatedEvents } = useDataSource();
   const [recentEvents, setRecentEvents] = React.useState<WikipediaEvent[]>([]);
   const [filter, setFilter] = React.useState<'all' | 'user' | 'bot'>('all');
 
   React.useEffect(() => {
-    if (events.length > 0) {
+    // Convert simulated events to WikipediaEvent format for display
+    const formattedSimulatedEvents: WikipediaEvent[] = simulatedEvents.map(e => ({
+      id: e.id,
+      type: 'edit',
+      title: e.content,
+      user: e.source,
+      timestamp: new Date(e.timestamp),
+      wiki: e.type,
+      bot: true,
+      minor: false,
+      delta: 0,
+      comment: '',
+      namespace: 0,
+      serverUrl: 'https://en.wikipedia.org'
+    }));
+
+    const allEvents = [...events, ...formattedSimulatedEvents].sort((a, b) =>
+      b.timestamp.getTime() - a.timestamp.getTime()
+    );
+
+    if (allEvents.length > 0) {
       setRecentEvents(prev => {
-        const newEvents = [...events, ...prev].slice(0, 50);
-        return newEvents;
+        // Merge and keep top 50
+        const merged = [...allEvents, ...prev].slice(0, 50);
+        // Deduplicate by ID
+        const unique = Array.from(new Map(merged.map(item => [item.id, item])).values());
+        return unique.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()).slice(0, 50);
       });
     }
-  }, [events]);
+  }, [events, simulatedEvents]);
 
   const filteredEvents = recentEvents.filter(e => {
     if (filter === 'all') return true;
