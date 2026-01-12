@@ -42,6 +42,10 @@ class UserModel:
     async def get_user_by_email(self, email: str):
         database = db_connection.get_database()
         return await database[self.collection_name].find_one({"email": email})
+    
+    async def get_user_by_username(self, username: str):
+        database = db_connection.get_database()
+        return await database[self.collection_name].find_one({"username": username})
         
     async def get_user_by_id(self, user_id: str):
         database = db_connection.get_database()
@@ -50,10 +54,23 @@ class UserModel:
         except:
             return None
 
+    async def get_all_users(self):
+        database = db_connection.get_database()
+        cursor = database[self.collection_name].find()
+        return await cursor.to_list(length=None)
+
     async def update_profile(self, user_id: str, update_data: Dict[str, Any]):
         database = db_connection.get_database()
         result = await database[self.collection_name].update_one(
             {"_id": ObjectId(user_id)}, {"$set": update_data}
+        )
+        return result.modified_count
+    
+    async def update_last_login(self, user_id: str):
+        database = db_connection.get_database()
+        result = await database[self.collection_name].update_one(
+            {"_id": ObjectId(user_id)}, 
+            {"$set": {"last_login": datetime.utcnow()}}
         )
         return result.modified_count
 
