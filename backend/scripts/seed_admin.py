@@ -28,7 +28,7 @@ async def seed_admin_user():
     
     if existing_admin:
         print("⚠️  Admin user already exists. Skipping...")
-        await db_connection.close()
+        await db_connection.disconnect()
         return
     
     # Create admin user
@@ -53,7 +53,7 @@ async def seed_admin_user():
     print(f"\n⚠️  Please change the default password after first login!")
     
     # Close database connection
-    await db_connection.close()
+    await db_connection.disconnect()
 
 if __name__ == "__main__":
     asyncio.run(seed_admin_user())
